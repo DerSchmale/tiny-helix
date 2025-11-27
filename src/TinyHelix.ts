@@ -2,6 +2,8 @@ import {WebGPUContext, WebGPUContextOptions} from './WebGPUContext';
 import {CommandEncoder} from "./CommandEncoder";
 import {Texture} from "./Texture";
 import {RenderTarget, RenderTargetBuilder} from "./RenderTarget";
+import {ShaderBuilder} from "./Shader";
+import {RenderPipeline, RenderPipelineBuilder} from "./RenderPipeline";
 
 /**
  * Options for initializing TinyHelix
@@ -88,6 +90,22 @@ export class TinyHelix {
     createRenderTarget(texture: Texture): RenderTargetBuilder
     {
         return new RenderTargetBuilder(texture);
+    }
+
+    /**
+     * Create a ShaderBuilder for creating a Shader.
+     */
+    createShader(): ShaderBuilder
+    {
+        return new ShaderBuilder(this._context);
+    }
+
+    /**
+     * Create a RenderPipelineBuilder for creating a RenderPipeline.
+     */
+    createRenderPipeline(): RenderPipelineBuilder
+    {
+        return new RenderPipelineBuilder(this._context);
     }
 
     /**

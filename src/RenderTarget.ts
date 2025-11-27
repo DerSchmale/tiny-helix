@@ -25,7 +25,7 @@ export class RenderTargetBuilder {
     /**
      * Set the base mip level to use for the render target. Defaults to 0.
      */
-    withMipLevel(level: number): RenderTargetBuilder {
+    withMipLevel(level: number): this {
         this._baseMipLevel = level;
         return this;
     }
@@ -33,7 +33,7 @@ export class RenderTargetBuilder {
     /**
      * Set the base array layer to use for the render target. Defaults to 0.
      */
-    withArrayLayer(layer: number): RenderTargetBuilder {
+    withArrayLayer(layer: number): this {
         this._baseArrayLayer = layer;
         return this;
     }

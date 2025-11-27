@@ -1,4 +1,5 @@
 import {RenderTarget} from "./RenderTarget";
+import {RenderPipeline} from "./RenderPipeline";
 
 /**
  * Fluent builder for configuring and creating a render pass.
@@ -8,12 +9,12 @@ import {RenderTarget} from "./RenderTarget";
  */
 export class RenderPassBuilder {
     _encoder: GPUCommandEncoder;
-    _label: string | undefined;
+    _label?: string;
     _colorTargets: RenderTarget[] = [];
     _clearColors: number[][] = [];
     _defaultTarget: RenderTarget;
-    _clearDepth: number | undefined;
-    _clearStencil: number | undefined;
+    _clearDepth?: number;
+    _clearStencil?: number;
 
     /**
      * Create a new builder instance. This should only be called from the CommandEncoder
@@ -31,7 +32,7 @@ export class RenderPassBuilder {
     /**
      * Assign a human-readable label for the render pass (useful for GPU debuggers).
      */
-    withLabel(label: string): RenderPassBuilder {
+    withLabel(label: string): this {
         this._label = label;
         return this;
     }
@@ -40,7 +41,7 @@ export class RenderPassBuilder {
      * Add a color target to render into. If no targets are added the default
      * backbuffer target will be used.
      */
-    withColorTarget(target: RenderTarget): RenderPassBuilder {
+    withColorTarget(target: RenderTarget): this {
         this._colorTargets.push(target);
         return this;
     }
@@ -49,11 +50,11 @@ export class RenderPassBuilder {
      * Set the clear color for the most recently added color target.
      * Overloads allow passing an array or individual color components.
      */
-    clearColor(): RenderPassBuilder;
-    clearColor(r: number[]): RenderPassBuilder;
-    clearColor(r: number, g: number, b: number): RenderPassBuilder;
-    clearColor(r: number, g: number, b: number, a: number): RenderPassBuilder;
-    clearColor(r?: number | number[], g?: number, b?: number, a?: number): RenderPassBuilder {
+    clearColor(): this;
+    clearColor(r: number[]): this;
+    clearColor(r: number, g: number, b: number): this;
+    clearColor(r: number, g: number, b: number, a: number): this;
+    clearColor(r?: number | number[], g?: number, b?: number, a?: number): this {
         let color;
         if (r === undefined) {
             color = [0.0, 0.0, 0.0, 1.0];
@@ -78,9 +79,9 @@ export class RenderPassBuilder {
      * Set clear values for depth and stencil attachments. If called without
      * arguments default values will be used (depth=1.0, stencil=0).
      */
-    clearDepthStencil(): RenderPassBuilder;
-    clearDepthStencil(depth: number): RenderPassBuilder;
-    clearDepthStencil(depth?: number, stencil?: number): RenderPassBuilder {
+    clearDepthStencil(): this;
+    clearDepthStencil(depth: number): this;
+    clearDepthStencil(depth?: number, stencil?: number): this {
         this._clearDepth = depth ?? 1.0;
         this._clearStencil = stencil ?? 0;
         return this;
@@ -119,9 +120,32 @@ export class RenderPassBuilder {
  */
 export class RenderPass {
     private _inner: GPURenderPassEncoder;
+    private _renderPipeline?: RenderPipeline;
 
     constructor(inner: GPURenderPassEncoder) {
         this._inner = inner;
+    }
+
+    /**
+     *
+     */
+    setRenderPipeline(pipeline: RenderPipeline): this
+    {
+        if (this._renderPipeline != pipeline) {
+            this._inner.setPipeline(pipeline.inner);
+            this._renderPipeline = pipeline;
+        }
+
+        return this;
+    }
+
+    /**
+     * Draws a mesh using the currently set render pipeline.
+     */
+    drawMesh(): this
+    {
+        this._inner.draw(3, 1, 0, 0);
+        return this;
     }
 
     /**
