@@ -1,37 +1,31 @@
 import {WebGPUContext} from "./WebGPUContext";
+import {mapUndefined} from "./utils/mapUndefined";
 
-interface Entries {
-    vertex?: string;
-    fragment?: string;
-}
+type AttributeMap = Map<string, number>;
 
 export class ShaderBuilder {
     private _code?: string;
     private _label?: string;
     private _ctx: WebGPUContext;
-    private _entries: Entries = {};
+    private _vertexAttributes: AttributeMap = new Map();    // name -> location
+    private _bindGroupLayouts: GPUBindGroupLayout[] | undefined;
 
     constructor(ctx: WebGPUContext) {
         this._ctx = ctx;
     }
 
-    withLabel(label: string): ShaderBuilder {
+    withLabel(label: string): this {
         this._label = label;
         return this;
     }
 
-    withCode(code: string): ShaderBuilder {
+    withCode(code: string): this {
         this._code = code;
         return this;
     }
 
-    withVertexShader(entry: string): ShaderBuilder {
-        this._entries.vertex = entry;
-        return this;
-    }
-
-    withFragmentShader(entry: string): ShaderBuilder {
-        this._entries.fragment = entry;
+    withVertexAttribute(name: string, location: number): this {
+        this._vertexAttributes.set(name, location);
         return this;
     }
 
@@ -47,29 +41,44 @@ export class ShaderBuilder {
             code: this._code,
         });
 
-        return new Shader(inner, this._entries);
+        // TODO: Provide these in the builder
+        const layout = mapUndefined(
+            this._bindGroupLayouts,
+            bindGroupLayouts => this._ctx.device.createPipelineLayout({bindGroupLayouts})
+        );
+
+        return new Shader(inner, this._vertexAttributes, layout);
     }
 }
 
 export class Shader {
     private _inner: GPUShaderModule;
-    private _entries: Entries;
     private _layout?: GPUPipelineLayout;
+    private _vertexAttributes: AttributeMap;
 
-    constructor(inner: GPUShaderModule, entries: Entries, layout?: GPUPipelineLayout) {
+    constructor(inner: GPUShaderModule, vertexAttributes: AttributeMap, layout?: GPUPipelineLayout) {
         this._inner = inner;
-        this._entries = entries;
         this._layout = layout;
+        this._vertexAttributes = vertexAttributes;
     }
 
-    public get vertexEntry(): string | undefined { return this._entries.vertex; }
-    public get fragmentEntry(): string | undefined { return this._entries.fragment; }
-    public get layout(): GPUPipelineLayout | undefined { return this._layout; }
+    get layout(): GPUPipelineLayout | undefined {
+        return this._layout;
+    }
+
+    getVertexAttributeLocation(name: string): number | undefined {
+        return this._vertexAttributes.get(name) ?? undefined;
+    }
+
+    hasVertexAttribute(name: string): boolean {
+        return this._vertexAttributes.has(name);
+    }
 
     /**
      * Internal accessor for the underlying GPUShaderModule. Not intended for public use.
      * @internal
      */
-    public get inner(): GPUShaderModule { return this._inner; }
-
+    public get inner(): GPUShaderModule {
+        return this._inner;
+    }
 }

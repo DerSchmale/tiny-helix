@@ -4,6 +4,7 @@ import {Texture} from "./Texture";
 import {RenderTarget, RenderTargetBuilder} from "./RenderTarget";
 import {ShaderBuilder} from "./Shader";
 import {RenderPipeline, RenderPipelineBuilder} from "./RenderPipeline";
+import {MeshBuilder} from "./Mesh";
 
 /**
  * Options for initializing TinyHelix
@@ -98,6 +99,14 @@ export class TinyHelix {
     createShader(): ShaderBuilder
     {
         return new ShaderBuilder(this._context);
+    }
+
+    /**
+     * Create a MeshBuilder for creating a Mesh.
+     */
+    createMesh(): MeshBuilder
+    {
+        return new MeshBuilder(this._context);
     }
 
     /**

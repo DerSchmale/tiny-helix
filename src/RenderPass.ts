@@ -1,5 +1,6 @@
 import {RenderTarget} from "./RenderTarget";
 import {RenderPipeline} from "./RenderPipeline";
+import {Mesh} from "./Mesh";
 
 /**
  * Fluent builder for configuring and creating a render pass.
@@ -121,6 +122,8 @@ export class RenderPassBuilder {
 export class RenderPass {
     private _inner: GPURenderPassEncoder;
     private _renderPipeline?: RenderPipeline;
+    private _numVertices: number = 0;
+    private _numIndices: number = 0;
 
     constructor(inner: GPURenderPassEncoder) {
         this._inner = inner;
@@ -139,12 +142,38 @@ export class RenderPass {
         return this;
     }
 
+    setMesh(mesh: Mesh): this
+    {
+        for (let i = 0; i < mesh.numStreams; ++i) {
+            const vertex_buffer = mesh.getVertexBuffer(i);
+            this._inner.setVertexBuffer(i, vertex_buffer.inner);
+        }
+
+        this._numVertices = mesh.numVertices;
+
+        const indexBuffer = mesh.indexBuffer;
+        if (indexBuffer) {
+            this._inner.setIndexBuffer(indexBuffer.inner, mesh.indexFormat);
+            this._numIndices = mesh.numIndices;
+        }
+        else {
+            this._numIndices = 0;
+        }
+
+        return this;
+    }
+
     /**
      * Draws a mesh using the currently set render pipeline.
      */
-    drawMesh(): this
+    draw(): this
     {
-        this._inner.draw(3, 1, 0, 0);
+        if (this._numIndices) {
+            this._inner.drawIndexed(this._numIndices, 1, 0, 0, 0);
+        }
+        else {
+            this._inner.draw(this._numVertices, 1, 0, 0);
+        }
         return this;
     }
 
