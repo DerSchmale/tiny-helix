@@ -125,12 +125,18 @@ export class RenderPass {
     private _numVertices: number = 0;
     private _numIndices: number = 0;
 
+    /**
+     * Internal accessor for the underlying GPURenderPassEncoder. Not intended for public use.
+     * @internal
+     */
     constructor(inner: GPURenderPassEncoder) {
         this._inner = inner;
     }
 
+
     /**
-     *
+     * Set the render pipeline to use for the next draw calls.
+     * @param pipeline
      */
     setRenderPipeline(pipeline: RenderPipeline): this
     {
@@ -142,6 +148,10 @@ export class RenderPass {
         return this;
     }
 
+    /**
+     * Sets the mesh to use for the next draw calls.
+     * @param mesh
+     */
     setMesh(mesh: Mesh): this
     {
         for (let i = 0; i < mesh.numStreams; ++i) {
@@ -164,7 +174,7 @@ export class RenderPass {
     }
 
     /**
-     * Draws a mesh using the currently set render pipeline.
+     * Issue a draw call using the currently set pipeline and mesh.
      */
     draw(): this
     {

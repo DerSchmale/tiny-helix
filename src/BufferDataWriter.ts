@@ -1,25 +1,63 @@
+/**
+ * Convert a JavaScript number (float32) to IEEE 754 binary16 (float16) representation.
+ * Returns the 16-bit unsigned integer bit pattern for the half-float.
+ */
+function float32ToFloat16(value: number): number {
+    // This is a compact implementation adapted for correctness.
+    const f32 = new Float32Array(1);
+    f32[0] = value;
+    const f32u = new Uint32Array(f32.buffer)[0];
+
+    const sign = (f32u >> 16) & 0x8000;
+    const exponent = ((f32u >> 23) & 0xff) - 127;
+    const mantissa = f32u & 0x007fffff;
+
+    if (exponent <= -15) {
+        // Too small to be represented as a normalized half-float -> zero or subnormal
+        // Round-to-zero behavior
+        return sign;
+    }
+
+    if (exponent > 16) {
+        // Overflow -> return Infinity
+        return sign | 0x7c00;
+    }
+
+    const halfExp = exponent + 15;
+    const halfMant = mantissa >> 13;
+    return sign | (halfExp << 10) | halfMant;
+}
+
+/**
+ * Utility for incrementally building binary data into an ArrayBuffer.
+ * Provides typed push helpers for common numeric types used in vertex/index buffers.
+ */
 export class BufferDataWriter {
     private _buffer: ArrayBuffer;
     private _view: DataView;
     private _offset = 0;
 
+    /** Create a new writer with the given total byte size. */
     constructor(byteSize: number) {
         this._buffer = new ArrayBuffer(byteSize);
         this._view = new DataView(this._buffer);
     }
 
+    /** Push an unsigned 8-bit integer. */
     pushUint8(value: number): this {
         this._view.setUint8(this._offset, value);
         this._offset += 1;
         return this;
     }
 
+    /** Push two unsigned 8-bit integers. */
     pushUint8x2(x: number, y: number): this {
         this.pushUint8(x);
         this.pushUint8(y);
         return this;
     }
 
+    /** Push four unsigned 8-bit integers. */
     pushUint8x4(x: number, y: number, z: number, w: number): this {
         this.pushUint8(x);
         this.pushUint8(y);
@@ -28,18 +66,21 @@ export class BufferDataWriter {
         return this;
     }
 
+    /** Push a signed 8-bit integer. */
     pushSint8(value: number): this {
         this._view.setInt8(this._offset, value);
         this._offset += 1;
         return this;
     }
 
+    /** Push two signed 8-bit integers. */
     pushSint8x2(x: number, y: number): this {
         this.pushSint8(x);
         this.pushSint8(y);
         return this;
     }
 
+    /** Push four signed 8-bit integers. */
     pushSint8x4(x: number, y: number, z: number, w: number): this {
         this.pushSint8(x);
         this.pushSint8(y);
@@ -48,18 +89,21 @@ export class BufferDataWriter {
         return this;
     }
 
+    /** Push an unsigned 16-bit integer (little-endian). */
     pushUint16(value: number): this {
         this._view.setUint16(this._offset, value, true);
         this._offset += 2;
         return this;
     }
 
+    /** Push two unsigned 16-bit integers (little-endian). */
     pushUint16x2(x: number, y: number): this {
         this.pushUint16(x);
         this.pushUint16(y);
         return this;
     }
 
+    /** Push four unsigned 16-bit integers (little-endian). */
     pushUint16x4(x: number, y: number, z: number, w: number): this {
         this.pushUint16(x);
         this.pushUint16(y);
@@ -68,18 +112,21 @@ export class BufferDataWriter {
         return this;
     }
 
+    /** Push a signed 16-bit integer (little-endian). */
     pushSint16(value: number): this {
         this._view.setInt16(this._offset, value, true);
         this._offset += 2;
         return this;
     }
 
+    /** Push two signed 16-bit integers (little-endian). */
     pushSint16x2(x: number, y: number): this {
         this.pushSint16(x);
         this.pushSint16(y);
         return this;
     }
 
+    /** Push four signed 16-bit integers (little-endian). */
     pushSint16x4(x: number, y: number, z: number, w: number): this {
         this.pushSint16(x);
         this.pushSint16(y);
@@ -88,18 +135,22 @@ export class BufferDataWriter {
         return this;
     }
 
+    /** Push a 16-bit float (little-endian). */
     pushFloat16(value: number) {
-        this._view.setFloat16(this._offset, value, true);
+        const bits = float32ToFloat16(value);
+        this._view.setUint16(this._offset, bits, true);
         this._offset += 2;
         return this;
     }
 
+    /** Push two 16-bit floats (little-endian). */
     pushFloat16x2(x: number, y: number): this {
         this.pushFloat16(x);
         this.pushFloat16(y);
         return this;
     }
 
+    /** Push four 16-bit floats (little-endian). */
     pushFloat16x4(x: number, y: number, z: number, w: number): this {
         this.pushFloat16(x);
         this.pushFloat16(y);
@@ -108,18 +159,21 @@ export class BufferDataWriter {
         return this;
     }
 
+    /** Push a 32-bit float (little-endian). */
     pushFloat32(value: number): this {
         this._view.setFloat32(this._offset, value, true);
         this._offset += 4;
         return this;
     }
 
+    /** Push two 32-bit floats (little-endian). */
     pushFloat32x2(x: number, y: number): this {
         this.pushFloat32(x);
         this.pushFloat32(y);
         return this;
     }
 
+    /** Push four 32-bit floats (little-endian). */
     pushFloat32x3(x: number, y: number, z: number): this {
         this.pushFloat32(x);
         this.pushFloat32(y);
@@ -127,6 +181,7 @@ export class BufferDataWriter {
         return this;
     }
 
+    /** Push an 8-bit float (little-endian). */
     pushFloat32x4(x: number, y: number, z: number, w: number): this {
         this.pushFloat32(x);
         this.pushFloat32(y);
@@ -135,18 +190,21 @@ export class BufferDataWriter {
         return this;
     }
 
+    /** Push an unsigned 32-bit integer (little-endian). */
     pushUint32(value: number): this {
         this._view.setUint32(this._offset, value, true);
         this._offset += 4;
         return this;
     }
 
+    /** Push two unsigned 32-bit integers (little-endian). */
     pushUint32x2(x: number, y: number): this {
         this.pushUint32(x);
         this.pushUint32(y);
         return this;
     }
 
+    /** Push three unsigned 32-bit integers (little-endian). */
     pushUint32x3(x: number, y: number, z: number): this {
         this.pushUint32(x);
         this.pushUint32(y);
@@ -154,6 +212,7 @@ export class BufferDataWriter {
         return this;
     }
 
+    /** Push four unsigned 32-bit integers (little-endian). */
     pushUint32x4(x: number, y: number, z: number, w: number): this {
         this.pushUint32(x);
         this.pushUint32(y);
@@ -162,18 +221,21 @@ export class BufferDataWriter {
         return this;
     }
 
+    /** Push a signed 32-bit integer (little-endian). */
     pushSint32(value: number): this {
         this._view.setInt32(this._offset, value, true);
         this._offset += 4;
         return this;
     }
 
+    /** Push two signed 32-bit integers (little-endian). */
     pushSint32x2(x: number, y: number): this {
         this.pushSint32(x);
         this.pushSint32(y);
         return this;
     }
 
+    /** Push three signed 32-bit integers (little-endian). */
     pushSint32x3(x: number, y: number, z: number): this {
         this.pushSint32(x);
         this.pushSint32(y);
@@ -181,6 +243,7 @@ export class BufferDataWriter {
         return this;
     }
 
+    /** Push four signed 32-bit integers (little-endian). */
     pushSint32x4(x: number, y: number, z: number, w: number): this {
         this.pushSint32(x);
         this.pushSint32(y);
@@ -189,7 +252,7 @@ export class BufferDataWriter {
         return this;
     }
 
-
+    /** Returns the underlying ArrayBuffer containing all written data. */
     get arrayBuffer(): ArrayBuffer
     {
         return this._buffer;

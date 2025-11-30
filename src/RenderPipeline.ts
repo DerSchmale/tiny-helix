@@ -9,6 +9,10 @@ export enum CullMode {
     Back = 'back'
 }
 
+/**
+ * Fluent builder for creating a GPURenderPipeline. Attach a `Shader` and
+ * optionally a `Mesh` (to derive vertex buffer layouts) before calling `build()`.
+ */
 export class RenderPipelineBuilder {
     private _shader?: Shader;
     private _colorTargets: GPUColorTargetState[] = [];
@@ -30,36 +34,43 @@ export class RenderPipelineBuilder {
         }
     }
 
+    /** Assign a human-readable label for the pipeline (useful in graphics debuggers). */
     withLabel(label: string): this {
         this._label = label;
         return this;
     }
 
+    /** Set face-culling mode. Default is `Back`. */
     withCullMode(value: CullMode): this {
         this._cullMode = value;
         return this;
     }
 
+    /** Provide a Mesh to automatically derive vertex buffer layouts. */
     withMesh(mesh: Mesh): this {
         this._mesh = mesh;
         return this;
     }
 
+    /** Attach a compiled Shader to the pipeline. */
     withShader(shader: Shader): this {
         this._shader = shader;
         return this;
     }
 
+    /** Select the shader entry point for the vertex stage. */
     withVertexShader(entry: string): this {
         this._vertexEntry = entry;
         return this;
     }
 
+    /** Select the shader entry point for the fragment stage. */
     withFragmentShader(entry: string): this {
         this._fragmentEntry = entry;
         return this;
     }
 
+    /** Add a color target with the given texture format. */
     withColorTarget(format: GPUTextureFormat): this {
         this._colorTargets.push({
             format,
@@ -69,6 +80,7 @@ export class RenderPipelineBuilder {
         return this;
     }
 
+    /** Override a shader constant for specialization. */
     withOverrideConstant(id: string, value: number): this {
         this._overrideConstants[id] = value;
         return this;
@@ -79,6 +91,10 @@ export class RenderPipelineBuilder {
         return this;
     }
 
+    /**
+     * Build and create the `RenderPipeline`. Throws if required pieces (shader/vertices)
+     * are missing.
+     */
     build(): RenderPipeline {
         if (!this._shader) {
             throw new Error("Shader not specified. Use withShader() to set the shader to use.");
@@ -148,7 +164,8 @@ export class RenderPipelineBuilder {
 }
 
 /**
- * Lightweight wrapper around GPURenderPipeline. Provides an internal accessor for low-level interop.
+ * Thin wrapper around GPURenderPipeline exposing a small helper for attribute
+ * location lookup. The underlying pipeline and shader are available for advanced use.
  */
 export class RenderPipeline {
     private _inner: GPURenderPipeline;
@@ -167,6 +184,9 @@ export class RenderPipeline {
         return this._inner;
     }
 
+    /**
+     * Helper to get the shader-declared attribute location for a named attribute.
+     */
     public getVertexAttributeLocation(name: string): number | undefined {
         return this._shader.getVertexAttributeLocation(name);
     }

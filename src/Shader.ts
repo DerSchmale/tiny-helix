@@ -3,6 +3,10 @@ import {mapUndefined} from "./utils/mapUndefined";
 
 type AttributeMap = Map<string, number>;
 
+/**
+ * Builder for creating shader modules and declaring attribute locations used by the helper
+ * pipeline builder.
+ */
 export class ShaderBuilder {
     private _code?: string;
     private _label?: string;
@@ -14,16 +18,19 @@ export class ShaderBuilder {
         this._ctx = ctx;
     }
 
+    /** Optional label for the underlying GPUShaderModule. */
     withLabel(label: string): this {
         this._label = label;
         return this;
     }
 
+    /** Set WGSL or other shader code to compile into a GPUShaderModule. */
     withCode(code: string): this {
         this._code = code;
         return this;
     }
 
+    /** Declare a named vertex attribute and the location it maps to in the shader. */
     withVertexAttribute(name: string, location: number): this {
         this._vertexAttributes.set(name, location);
         return this;
@@ -31,6 +38,7 @@ export class ShaderBuilder {
 
     // TODO: Provide layout methods
 
+    /** Compile the shader module and return a `Shader` instance. */
     build(): Shader {
         if (!this._code) {
             throw new Error("Shader code not specified. Use withCode() to set the shader source.");
@@ -51,6 +59,10 @@ export class ShaderBuilder {
     }
 }
 
+/**
+ * Wrapper around GPUShaderModule. Keeps a map of vertex attribute names to
+ * shader locations to aid pipeline construction.
+ */
 export class Shader {
     private _inner: GPUShaderModule;
     private _layout?: GPUPipelineLayout;

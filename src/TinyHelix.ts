@@ -3,7 +3,7 @@ import {CommandEncoder} from "./CommandEncoder";
 import {Texture} from "./Texture";
 import {RenderTarget, RenderTargetBuilder} from "./RenderTarget";
 import {ShaderBuilder} from "./Shader";
-import {RenderPipeline, RenderPipelineBuilder} from "./RenderPipeline";
+import {RenderPipelineBuilder} from "./RenderPipeline";
 import {MeshBuilder} from "./Mesh";
 
 /**
@@ -35,6 +35,7 @@ export class TinyHelix {
     /**
      * Initializes the underlying WebGPU context and prepares resources.
      * @param options - Configuration options forwarded to the WebGPU context
+     * @example await tiny.initialize({ canvas: myCanvas });
      */
     async initialize(options: TinyHelixOptions = {}) {
         this._options = options;
@@ -79,6 +80,7 @@ export class TinyHelix {
     /**
      * Needs to be called before rendering each frame. Updates internal backbuffer
      * references to the current swapchain texture.
+     * @example tiny.startFrame();
      */
     startFrame() {
         this._backbuffer = Texture.from_webgpu(this._context.getCurrentTexture());

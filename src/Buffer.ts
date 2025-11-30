@@ -2,6 +2,10 @@ import {WebGPUContext} from "./WebGPUContext";
 import {mapUndefined} from "./utils/mapUndefined";
 import {padArrayBuffer} from "./utils/padArrayBuffer";
 
+/**
+ * Buffer usage flags re-exported from the WebGPU API for convenience.
+ * Use these when constructing buffers with `BufferBuilder.withUsage()`.
+ */
 export enum BufferUsage {
     MapRead = GPUBufferUsage.MAP_READ,
     MapWrite = GPUBufferUsage.MAP_WRITE,
@@ -15,6 +19,15 @@ export enum BufferUsage {
     QueryResolve = GPUBufferUsage.QUERY_RESOLVE
 }
 
+/**
+ * Builder for creating GPU-backed buffers.
+ *
+ * Example:
+ * const buf = new BufferBuilder(ctx)
+ *   .withUsage(BufferUsage.Vertex | BufferUsage.CopyDst)
+ *   .withData(new Float32Array([...]).buffer)
+ *   .build();
+ */
 export class BufferBuilder {
     private _ctx: WebGPUContext;
     private _data?: ArrayBufferLike;
@@ -26,12 +39,20 @@ export class BufferBuilder {
         this._ctx = ctx;
     }
 
+    /**
+     * Add usage flags for the GPU buffer.
+     */
     withUsage(usage: BufferUsage): this
     {
         this._usage |= usage;
         return this;
     }
 
+    /**
+     * Provide initial data for the buffer. If `keepOnCPU` is true the original
+     * ArrayBuffer is stored in the resulting `Buffer.data` field for readback or
+     * reuse.
+     */
     withData(data: ArrayBufferLike, keepOnCPU: boolean = false) {
         this._data = data;
         // round to the nearest multiple of 4 bytes, as required by GPUBuffer.writeBuffer()
@@ -40,6 +61,9 @@ export class BufferBuilder {
         return this;
     }
 
+    /**
+     * Create the GPU buffer and upload any provided data.
+     */
     build(): Buffer {
         const data = mapUndefined(this._data, data => padArrayBuffer(data, 4));
         const buffer = this._ctx.device.createBuffer({
@@ -55,15 +79,31 @@ export class BufferBuilder {
     }
 }
 
+/**
+ * Lightweight wrapper around a GPUBuffer. Exposes the original CPU-side data
+ * (when kept) and the underlying GPU buffer for low-level interop.
+ */
 export class Buffer {
     private _data?: ArrayBufferLike;
     private _inner: GPUBuffer;
 
+    /**
+     * Create a Buffer from an existing GPUBuffer.
+     * @param inner The underlying GPUBuffer.
+     * @param data Optional CPU-side copy of the buffer contents.
+     */
     constructor(inner: GPUBuffer, data?: ArrayBufferLike) {
         this._inner = inner;
         this._data = data;
     }
 
-    get inner(): GPUBuffer { return this._inner; }
+    /** CPU-side copy of the buffer contents when requested during build(). */
     get data(): ArrayBufferLike | undefined { return this._data; }
+
+    /** Size of the GPU buffer in bytes. */
+    get size(): number { return this._inner.size; }
+
+    /** The underlying GPUBuffer for advanced operations. @internal */
+    get inner(): GPUBuffer { return this._inner; }
+
 }

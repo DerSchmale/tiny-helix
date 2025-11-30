@@ -2,6 +2,9 @@ import {Buffer, BufferBuilder, BufferUsage} from "./Buffer";
 import {WebGPUContext} from "./WebGPUContext";
 import {mapUndefined} from "./utils/mapUndefined";
 
+/**
+ * Index buffer formats supported by the library.
+ */
 export enum IndexFormat {
     Uint16 = 'uint16',
     Uint32 = 'uint32'
@@ -13,7 +16,9 @@ class IndexBuffer {
     count: number;
 
     constructor(data: Uint16Array | Uint32Array, ctx: WebGPUContext, keepData: boolean = false) {
-        this.format = data instanceof Uint16Array ? IndexFormat.Uint16 : IndexFormat.Uint32;
+        // Use BYTES_PER_ELEMENT on the union-typed array in a typed manner to avoid 'any' casts
+        const bytesPerElement = (data as Uint16Array | Uint32Array).BYTES_PER_ELEMENT;
+        this.format = bytesPerElement === 2 ? IndexFormat.Uint16 : IndexFormat.Uint32;
         this.count = data.length;
         this.buffer = new BufferBuilder(ctx)
             .withData(data.buffer, keepData)
@@ -22,6 +27,9 @@ class IndexBuffer {
     }
 }
 
+/**
+ * Mesh topology enum (maps to GPU primitive topologies).
+ */
 export enum MeshTopology {
     TriangleList = 'triangle-list',
     TriangleStrip = 'triangle-strip',
@@ -30,11 +38,18 @@ export enum MeshTopology {
     PointList = 'point-list'
 }
 
+/**
+ * Winding mode for front-facing triangles.
+ */
 export enum FrontFace {
     Clockwise = 'cw',
     CounterClockwise = 'ccw'
 }
 
+/**
+ * Vertex attribute formats supported by the helper. These are translated into
+ * GPU vertex attribute formats when building pipelines.
+ */
 export enum VertexFormat {
     Uint8 = 'uint8',
     Uint8x2 = 'uint8x2',
@@ -144,75 +159,116 @@ class VertexStream {
     buffer?: Buffer;
 
     pushAttribute(name: string, format: VertexFormat) {
-
         this.attributes.push({name, format, offset: this.stride});
         this.stride += vertexFormatByteSize(format);
     }
+
+    get numVertices(): number {
+        return this.buffer!.size / this.stride;
+    }
 }
 
+/**
+ * Builder helper used when creating a vertex stream for a Mesh.
+ */
+export class StreamBuilder {
+    private _stream: VertexStream;
+    private _ctx: WebGPUContext;
+
+    /**
+     * @internal
+     */
+    constructor(stream: VertexStream, ctx: WebGPUContext) {
+        this._stream = stream;
+        this._ctx = ctx;
+    }
+
+    /**
+     * Add a vertex attribute to the stream.
+     * @param name - attribute name used by the shader bindings
+     * @param format - attribute format (see VertexFormat)
+     */
+    pushAttribute(name: string, format: VertexFormat): this {
+        this._stream.pushAttribute(name, format);
+        return this;
+    }
+
+    /**
+     * Upload vertex data for this stream. `keepOnCPU` controls whether the
+     * source ArrayBuffer is retained in memory for readback.
+     */
+    withData(data: ArrayBufferLike, keepOnCPU: boolean = false) {
+        this._stream.buffer = new BufferBuilder(this._ctx)
+            .withData(data, keepOnCPU)
+            .withUsage(BufferUsage.Vertex | BufferUsage.CopyDst)
+            .build();
+    }
+}
+
+/**
+ * Fluent builder for creating a Mesh. Use `pushStream()` to describe vertex
+ * streams and `withIndexData()` to add optional indices.
+ */
 export class MeshBuilder {
     private _topology: MeshTopology = MeshTopology.TriangleList;
     private _frontFace: FrontFace = FrontFace.CounterClockwise;
-    private _streams: VertexStream[] = [new VertexStream()];
+    private _streams: VertexStream[] = [];
     private _ctx: WebGPUContext;
     private _indexBuffer?: IndexBuffer;
-    private _numVertices: number = 0;
 
+    /**
+     * @internal
+     */
     constructor(ctx: WebGPUContext) {
         this._ctx = ctx;
     }
 
-    pushStream(data: ArrayBufferLike, keepOnCPU: boolean = false): this {
-        const stream = this._streams[this._streams.length - 1];
-        stream.buffer = new BufferBuilder(this._ctx)
-            .withData(data, keepOnCPU)
-            .withUsage(BufferUsage.Vertex | BufferUsage.CopyDst)
-            .build();
-
-        const numVertices = data.byteLength / stream.stride;
-        console.assert(this._streams.length == 1 || numVertices == this._numVertices, "All vertex buffers must have the same number of vertices.")
-        this._numVertices = numVertices;
-
-        this._streams.push(new VertexStream());
+    /** Add a vertex stream using a builder callback. */
+    pushStream(buildFunc: (builder: StreamBuilder) => void): this {
+        const stream = new VertexStream();
+        buildFunc(new StreamBuilder(stream, this._ctx));
+        console.assert(stream.buffer !== undefined, "Vertex stream must have a buffer. Did you forget to call withData()?");
+        this._streams.push(stream);
         return this;
     }
 
-    pushAttribute(name: string, format: VertexFormat): this {
-        const streamIndex = this._streams.length - 1;
-        const stream = this._streams[streamIndex];
-        stream.pushAttribute(name, format);
-        return this;
-    }
-
+    /** Set the winding used to determine front-facing triangles. Defaults to counter-clockwise. */
     withFrontFace(value: FrontFace): this {
         this._frontFace = value;
         return this;
     }
 
+    /** Set the primitive topology for the mesh. Defaults to triangle list. */
     withTopology(value: MeshTopology): this {
         this._topology = value;
         return this;
     }
 
+    /**
+     * Provide index data (Uint16Array or Uint32Array). If `keepOnCPU` is true the
+     * original array buffer will be preserved on the resulting mesh's index buffer.
+     */
     withIndexData(data: Uint16Array | Uint32Array, keepOnCPU: boolean = false): this {
         this._indexBuffer = mapUndefined(data, data => new IndexBuffer(data, this._ctx, keepOnCPU));
         return this;
     }
 
+    /** Build the mesh. */
     build(): Mesh {
-        // remove the last stream, it's empty
-        this._streams.pop();
-
+        console.assert(this._streams.length > 0, "Mesh must have at least one vertex stream.");
         return new Mesh(
             this._topology,
             this._frontFace,
-            this._numVertices,
             this._streams,
             this._indexBuffer,
         );
     }
 }
 
+/**
+ * Lightweight Mesh representation containing vertex streams and an optional index buffer.
+ * Use `MeshBuilder` to construct instances.
+ */
 export class Mesh {
     private _topology: MeshTopology;
     private _frontFace: FrontFace;
@@ -223,50 +279,65 @@ export class Mesh {
     /**
      * @internal
      */
-    constructor(topology: MeshTopology, frontFace: FrontFace, numVertices: number, streams: VertexStream[], indexBuffer?: IndexBuffer) {
+    constructor(topology: MeshTopology, frontFace: FrontFace, streams: VertexStream[], indexBuffer?: IndexBuffer) {
         this._topology = topology;
         this._frontFace = frontFace;
         this._streams = streams;
-        this._numVertices = numVertices;
         this._indexBuffer = indexBuffer;
+        this._numVertices = this._streams[0].numVertices;
+
+        this._streams.forEach(
+            stream => console.assert(stream.numVertices === this._numVertices,
+                "All vertex streams must have the same number of vertices."
+            ));
     }
 
+    /** The primitive topology for this mesh. */
     get topology(): MeshTopology {
         return this._topology;
     }
 
+    /** The winding used to determine front-facing triangles. */
     get frontFace(): FrontFace {
         return this._frontFace;
     }
 
+    /** The number of vertex streams in this mesh. */
     get numStreams() {
         return this._streams.length;
     }
 
+    /** Get the number of vertices in the first vertex stream. */
     get numVertices() {
         return this._numVertices;
     }
 
+    /** Get the GPU-backed vertex buffer for a given stream index. */
     getVertexBuffer(streamIndex: number): Buffer {
         return this._streams[streamIndex].buffer!;
     }
 
+    /** Get the stride (byte size) of a vertex in the requested stream. */
     getStreamStride(streamIndex: number): number {
         return this._streams[streamIndex].stride;
     }
 
+    /** Get the declared attributes for a vertex stream. */
     getStreamAttributes(streamIndex: number): VertexAttribute[] {
         return this._streams[streamIndex].attributes;
     }
 
+    /** Get the optional index buffer backing this mesh. */
     get indexBuffer(): Buffer | undefined {
         return this._indexBuffer?.buffer;
     }
 
+    /** Get the index format of the index buffer backing this mesh. */
     get indexFormat(): IndexFormat {
         return this._indexBuffer?.format ?? IndexFormat.Uint16;
     }
 
+    /** Get the number of indices in the index buffer backing this mesh. */
     get numIndices(): number {
         return this._indexBuffer?.count ?? 0;
     }
