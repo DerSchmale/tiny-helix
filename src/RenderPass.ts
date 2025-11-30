@@ -51,11 +51,11 @@ export class RenderPassBuilder {
      * Set the clear color for the most recently added color target.
      * Overloads allow passing an array or individual color components.
      */
-    clearColor(): this;
-    clearColor(r: number[]): this;
-    clearColor(r: number, g: number, b: number): this;
-    clearColor(r: number, g: number, b: number, a: number): this;
-    clearColor(r?: number | number[], g?: number, b?: number, a?: number): this {
+    withClearColor(): this;
+    withClearColor(r: number[]): this;
+    withClearColor(r: number, g: number, b: number): this;
+    withClearColor(r: number, g: number, b: number, a: number): this;
+    withClearColor(r?: number | number[], g?: number, b?: number, a?: number): this {
         let color;
         if (r === undefined) {
             color = [0.0, 0.0, 0.0, 1.0];
@@ -80,9 +80,9 @@ export class RenderPassBuilder {
      * Set clear values for depth and stencil attachments. If called without
      * arguments default values will be used (depth=1.0, stencil=0).
      */
-    clearDepthStencil(): this;
-    clearDepthStencil(depth: number): this;
-    clearDepthStencil(depth?: number, stencil?: number): this {
+    withClearDepthStencil(): this;
+    withClearDepthStencil(depth: number): this;
+    withClearDepthStencil(depth?: number, stencil?: number): this {
         this._clearDepth = depth ?? 1.0;
         this._clearStencil = stencil ?? 0;
         return this;

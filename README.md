@@ -33,7 +33,14 @@ function frame() {
   app.startFrame();
   const encoder = app.createCommandEncoder('frame-encoder');
 
-  // build and submit render passes with encoder.createRenderPass()
+  // Simple clear pass: create a render pass, set the clear color and end the pass.
+  // This uses the backbuffer as the default target.
+  const clearPass = encoder.createRenderPass()
+    .withLabel('clear-pass')
+    .withClearColor(0.1, 0.12, 0.15, 1.0) // r,g,b,a
+    .build();
+
+  clearPass.end();
 
   encoder.submit();
   requestAnimationFrame(frame);
