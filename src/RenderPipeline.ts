@@ -10,6 +10,28 @@ export enum CullMode {
 }
 
 /**
+ * Thin wrapper around GPURenderPipeline exposing a small helper for attribute
+ * location lookup. The underlying pipeline and shader are available for advanced use.
+ */
+export class RenderPipeline {
+    /** @internal */
+    readonly _inner: GPURenderPipeline;
+    private _shader: Shader;
+
+    constructor(inner: GPURenderPipeline, shader: Shader) {
+        this._inner = inner;
+        this._shader = shader;
+    }
+
+    /**
+     * Helper to get the shader-declared attribute location for a named attribute.
+     */
+    public getVertexAttributeLocation(name: string): number | undefined {
+        return this._shader.getVertexAttributeLocation(name);
+    }
+}
+
+/**
  * Fluent builder for creating a GPURenderPipeline. Attach a `Shader` and
  * optionally a `Mesh` (to derive vertex buffer layouts) before calling `build()`.
  */
@@ -116,7 +138,7 @@ export class RenderPipelineBuilder {
         const buffers = mapUndefined(this._mesh, mesh => {
             const buffers: GPUVertexBufferLayout[] = [];
             for (let i = 0; i < mesh.numStreams; ++i) {
-               const attributes = mesh.getStreamAttributes(i)
+                const attributes = mesh.getStreamAttributes(i)
                     .filter(attr => shader.hasVertexAttribute(attr.name))
                     .map(attr => ({
                         shaderLocation: shader.getVertexAttributeLocation(attr.name)!,
@@ -133,20 +155,26 @@ export class RenderPipelineBuilder {
             return buffers;
         });
 
-        console.log(buffers);
+        const layout = mapUndefined(
+            shader._bindGroupLayouts,
+            bindGroupLayouts => this._ctx.device.createPipelineLayout({
+                bindGroupLayouts: bindGroupLayouts.map(value => value._inner),
+                label: this._label
+            })
+        ) ?? "auto";
 
         const desc: GPURenderPipelineDescriptor = {
             label: this._label,
-            layout: shader.layout ?? "auto",
+            layout,
             primitive,
             vertex: {
                 buffers,
-                module: shader.inner,
+                module: shader._inner,
                 entryPoint: this._vertexEntry!,
                 constants: this._overrideConstants
             },
             fragment: mapUndefined(this._fragmentEntry, entry => ({
-                module: shader.inner,
+                module: shader._inner,
                 entryPoint: entry,
                 targets: colorTargets,
                 constants: this._overrideConstants
@@ -160,34 +188,5 @@ export class RenderPipelineBuilder {
 
     private get lastColorTarget(): GPUColorTargetState {
         return this._colorTargets.length ? this._colorTargets[this._colorTargets.length - 1] : this._defaultColorState;
-    }
-}
-
-/**
- * Thin wrapper around GPURenderPipeline exposing a small helper for attribute
- * location lookup. The underlying pipeline and shader are available for advanced use.
- */
-export class RenderPipeline {
-    private _inner: GPURenderPipeline;
-    private _shader: Shader;
-
-    constructor(inner: GPURenderPipeline, shader: Shader) {
-        this._inner = inner;
-        this._shader = shader;
-    }
-
-    /**
-     * Internal accessor for the underlying GPURenderPipeline. Not intended for public use.
-     * @internal
-     */
-    get inner(): GPURenderPipeline {
-        return this._inner;
-    }
-
-    /**
-     * Helper to get the shader-declared attribute location for a named attribute.
-     */
-    public getVertexAttributeLocation(name: string): number | undefined {
-        return this._shader.getVertexAttributeLocation(name);
     }
 }

@@ -1,6 +1,94 @@
 import {RenderTarget} from "./RenderTarget";
 import {RenderPipeline} from "./RenderPipeline";
 import {Mesh} from "./Mesh";
+import {BindGroup} from "./BindGroup";
+
+/**
+ * Lightweight wrapper around GPURenderPassEncoder. Provides a minimal API
+ * for ending the pass; higher-level helpers may be added later.
+ */
+export class RenderPass {
+    private _inner: GPURenderPassEncoder;
+    private _renderPipeline?: RenderPipeline;
+    private _numVertices: number = 0;
+    private _numIndices: number = 0;
+
+    /**
+     * Internal accessor for the underlying GPURenderPassEncoder. Not intended for public use.
+     * @internal
+     */
+    constructor(inner: GPURenderPassEncoder) {
+        this._inner = inner;
+    }
+
+
+    /**
+     * Set the render pipeline to use for the next draw calls.
+     * @param pipeline
+     */
+    setRenderPipeline(pipeline: RenderPipeline): this
+    {
+        if (this._renderPipeline != pipeline) {
+            this._inner.setPipeline(pipeline._inner);
+            this._renderPipeline = pipeline;
+        }
+
+        return this;
+    }
+
+    /**
+     * Sets the mesh to use for the next draw calls.
+     * @param mesh
+     */
+    setMesh(mesh: Mesh): this
+    {
+        for (let i = 0; i < mesh.numStreams; ++i) {
+            const vertex_buffer = mesh.getVertexBuffer(i);
+            this._inner.setVertexBuffer(i, vertex_buffer._inner);
+        }
+
+        this._numVertices = mesh.numVertices;
+
+        const indexBuffer = mesh.indexBuffer;
+        if (indexBuffer) {
+            this._inner.setIndexBuffer(indexBuffer._inner, mesh.indexFormat);
+            this._numIndices = mesh.numIndices;
+        }
+        else {
+            this._numIndices = 0;
+        }
+
+        return this;
+    }
+
+    setBindGroup(index: number, bindGroup: BindGroup): this
+    {
+        this._inner.setBindGroup(index, bindGroup._inner);
+        return this;
+    }
+
+    /**
+     * Issue a draw call using the currently set pipeline and mesh.
+     */
+    draw(): this
+    {
+        if (this._numIndices) {
+            this._inner.drawIndexed(this._numIndices, 1, 0, 0, 0);
+        }
+        else {
+            this._inner.draw(this._numVertices, 1, 0, 0);
+        }
+        return this;
+    }
+
+    /**
+     * End the render pass. After calling end(), the underlying encoder may
+     * continue recording other passes or be finished/submitted.
+     */
+    end() {
+        this._inner.end();
+    }
+}
 
 /**
  * Fluent builder for configuring and creating a render pass.
@@ -98,7 +186,7 @@ export class RenderPassBuilder {
 
         for (let i = 0; i < targets.length; ++i) {
             colorAttachments.push({
-                view: targets[i].inner,
+                view: targets[i]._inner,
                 loadOp: this._clearColors[i] ? 'clear' : 'load',
                 storeOp: 'store',
                 clearValue: this._clearColors[i]
@@ -112,86 +200,5 @@ export class RenderPassBuilder {
         };
 
         return new RenderPass(this._encoder.beginRenderPass(desc));
-    }
-}
-
-/**
- * Lightweight wrapper around GPURenderPassEncoder. Provides a minimal API
- * for ending the pass; higher-level helpers may be added later.
- */
-export class RenderPass {
-    private _inner: GPURenderPassEncoder;
-    private _renderPipeline?: RenderPipeline;
-    private _numVertices: number = 0;
-    private _numIndices: number = 0;
-
-    /**
-     * Internal accessor for the underlying GPURenderPassEncoder. Not intended for public use.
-     * @internal
-     */
-    constructor(inner: GPURenderPassEncoder) {
-        this._inner = inner;
-    }
-
-
-    /**
-     * Set the render pipeline to use for the next draw calls.
-     * @param pipeline
-     */
-    setRenderPipeline(pipeline: RenderPipeline): this
-    {
-        if (this._renderPipeline != pipeline) {
-            this._inner.setPipeline(pipeline.inner);
-            this._renderPipeline = pipeline;
-        }
-
-        return this;
-    }
-
-    /**
-     * Sets the mesh to use for the next draw calls.
-     * @param mesh
-     */
-    setMesh(mesh: Mesh): this
-    {
-        for (let i = 0; i < mesh.numStreams; ++i) {
-            const vertex_buffer = mesh.getVertexBuffer(i);
-            this._inner.setVertexBuffer(i, vertex_buffer.inner);
-        }
-
-        this._numVertices = mesh.numVertices;
-
-        const indexBuffer = mesh.indexBuffer;
-        if (indexBuffer) {
-            this._inner.setIndexBuffer(indexBuffer.inner, mesh.indexFormat);
-            this._numIndices = mesh.numIndices;
-        }
-        else {
-            this._numIndices = 0;
-        }
-
-        return this;
-    }
-
-    /**
-     * Issue a draw call using the currently set pipeline and mesh.
-     */
-    draw(): this
-    {
-        if (this._numIndices) {
-            this._inner.drawIndexed(this._numIndices, 1, 0, 0, 0);
-        }
-        else {
-            this._inner.draw(this._numVertices, 1, 0, 0);
-        }
-        return this;
-    }
-
-    /**
-     * End the render pass. After calling end(), the underlying encoder may
-     * continue recording other passes or be finished/submitted.
-     */
-    end() {
-        this._inner.end();
     }
 }

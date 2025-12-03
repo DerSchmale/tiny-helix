@@ -3,7 +3,8 @@
  * an internal accessor for low-level interop.
  */
 export class Texture {
-    _inner: GPUTexture;
+    /** @internal */
+    readonly _inner: GPUTexture;
 
     /**
      * Create a Texture wrapper from an existing GPUTexture.
@@ -15,13 +16,5 @@ export class Texture {
 
     private constructor(inner: GPUTexture) {
         this._inner = inner;
-    }
-
-    /**
-     * Internal accessor for the underlying GPUTexture. Not intended for public use.
-     * @internal
-     */
-    get inner(): GPUTexture {
-        return this._inner;
     }
 }

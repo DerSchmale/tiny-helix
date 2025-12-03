@@ -1,6 +1,18 @@
 import {Texture} from "./Texture";
 
 /**
+ * Lightweight wrapper around a GPUTextureView representing a render target.
+ * Use `view()` to get the underlying GPUTextureView when building render passes.
+ */
+export class RenderTarget {
+    readonly _inner: GPUTextureView;
+
+    constructor(view: GPUTextureView) {
+        this._inner = view;
+    }
+}
+
+/**
  * Builder for creating a `RenderTarget` from a `Texture`.
  *
  * The builder produces a GPUTextureView configured with a sensible default
@@ -42,7 +54,7 @@ export class RenderTargetBuilder {
      * Create and return a new `RenderTarget` instance.
      */
     build(): RenderTarget {
-        const tex = this._texture.inner;
+        const tex = this._texture._inner;
         const desc: GPUTextureViewDescriptor = {
             format: tex.format,
             dimension: tex.dimension,
@@ -52,26 +64,6 @@ export class RenderTargetBuilder {
             baseArrayLayer: this._baseArrayLayer,
             arrayLayerCount: 1
         }
-        return new RenderTarget(this._texture.inner.createView(desc));
-    }
-}
-
-/**
- * Lightweight wrapper around a GPUTextureView representing a render target.
- * Use `view()` to get the underlying GPUTextureView when building render passes.
- */
-export class RenderTarget {
-    private _inner: GPUTextureView;
-
-    constructor(view: GPUTextureView) {
-        this._inner = view;
-    }
-
-    /**
-     * The GPUTextureView for this render target.
-     * @internal
-     */
-    get inner(): GPUTextureView {
-        return this._inner;
+        return new RenderTarget(this._texture._inner.createView(desc));
     }
 }

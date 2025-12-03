@@ -3,19 +3,22 @@
  * @packageDocumentation
  */
 
-export {TinyHelix, type TinyHelixOptions} from './TinyHelix';
-export {WebGPUContext, type WebGPUContextOptions} from './WebGPUContext';
+export {TinyHelix, type TinyHelixOptions} from "./TinyHelix";
+export {WebGPUContext, type WebGPUContextOptions} from "./WebGPUContext";
 
 // Default export for convenience
-import {TinyHelix} from './TinyHelix';
+import {TinyHelix} from "./TinyHelix";
 
 export default TinyHelix;
 
-export * from './BufferDataWriter'
-export * from './CommandEncoder';
-export * from './Mesh';
-export * from './RenderPass';
-export * from './RenderPipeline';
-export * from './RenderTarget';
-export * from './Shader';
-export * from './Texture';
+export * from "./BindGroup";
+export * from "./CommandEncoder";
+export * from "./Mesh";
+export * from "./RenderPass";
+export * from "./RenderPipeline";
+export * from "./RenderTarget";
+export * from "./Shader";
+export * from "./Texture";
+export * from "./buffers/Buffer";
+export * from "./buffers/UniformBuffer";
+export * from "./buffers/BufferDataWriter"

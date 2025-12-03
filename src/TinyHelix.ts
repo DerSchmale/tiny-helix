@@ -5,6 +5,7 @@ import {RenderTarget, RenderTargetBuilder} from "./RenderTarget";
 import {ShaderBuilder} from "./Shader";
 import {RenderPipelineBuilder} from "./RenderPipeline";
 import {MeshBuilder} from "./Mesh";
+import {UniformBuffer, UniformBufferLayout, UniformBufferLayoutBuilder} from "./buffers/UniformBuffer";
 
 /**
  * Options for initializing TinyHelix
@@ -125,6 +126,22 @@ export class TinyHelix {
      */
     createCommandEncoder(label?: string): CommandEncoder {
         return new CommandEncoder(this.backbufferTarget, this._context, label);
+    }
+
+    /**
+     * Create a UniformBufferLayoutBuilder for creating a UniformBufferLayout.
+     */
+    createUniformBufferLayout(): UniformBufferLayoutBuilder
+    {
+        return new UniformBufferLayoutBuilder();
+    }
+
+    /**
+     * Create a UniformBuffer for the given layout.
+     */
+    createUniformBuffer(layout: UniformBufferLayout): UniformBuffer
+    {
+        return new UniformBuffer(layout, this._context)
     }
 
     /**

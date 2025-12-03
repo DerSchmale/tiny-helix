@@ -1,6 +1,7 @@
-import {WebGPUContext} from "./WebGPUContext";
-import {mapUndefined} from "./utils/mapUndefined";
-import {padArrayBuffer} from "./utils/padArrayBuffer";
+import {WebGPUContext} from "../WebGPUContext";
+import {mapUndefined} from "../utils/mapUndefined";
+import {padArrayBuffer} from "../utils/padArrayBuffer";
+import {IBuffer} from "./IBuffer";
 
 /**
  * Buffer usage flags re-exported from the WebGPU API for convenience.
@@ -83,9 +84,9 @@ export class BufferBuilder {
  * Lightweight wrapper around a GPUBuffer. Exposes the original CPU-side data
  * (when kept) and the underlying GPU buffer for low-level interop.
  */
-export class Buffer {
-    private _data?: ArrayBufferLike;
-    private _inner: GPUBuffer;
+export class Buffer implements IBuffer {
+    readonly _inner: GPUBuffer;
+    readonly data?: ArrayBufferLike;
 
     /**
      * Create a Buffer from an existing GPUBuffer.
@@ -94,16 +95,23 @@ export class Buffer {
      */
     constructor(inner: GPUBuffer, data?: ArrayBufferLike) {
         this._inner = inner;
-        this._data = data;
+        this.data = data;
     }
 
-    /** CPU-side copy of the buffer contents when requested during build(). */
-    get data(): ArrayBufferLike | undefined { return this._data; }
+    _getBuffer(): Buffer {
+        return this;
+    }
 
     /** Size of the GPU buffer in bytes. */
     get size(): number { return this._inner.size; }
 
-    /** The underlying GPUBuffer for advanced operations. @internal */
-    get inner(): GPUBuffer { return this._inner; }
+    _uploadData(ctx: WebGPUContext)
+    {
+        if (!this.data) {
+            console.warn("Buffer has no data to upload.");
+            return;
+        }
 
+        ctx.device.queue.writeBuffer(this._inner, 0, this.data);
+    }
 }
