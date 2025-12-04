@@ -2,6 +2,7 @@ import {RenderTarget} from "./RenderTarget";
 import {RenderPipeline} from "./RenderPipeline";
 import {Mesh} from "./Mesh";
 import {BindGroup} from "./BindGroup";
+import {IndexedCollection} from "./utils/IndexedCollection";
 
 /**
  * Lightweight wrapper around GPURenderPassEncoder. Provides a minimal API
@@ -61,6 +62,11 @@ export class RenderPass {
         return this;
     }
 
+    /**
+     * Set a bind group at the given index.
+     * @param index - bind group index in the render pipeline layout
+     * @param bindGroup - a `BindGroup` instance
+     */
     setBindGroup(index: number, bindGroup: BindGroup): this
     {
         this._inner.setBindGroup(index, bindGroup._inner);
@@ -140,10 +146,10 @@ export class RenderPassBuilder {
      * Overloads allow passing an array or individual color components.
      */
     withClearColor(): this;
-    withClearColor(r: number[]): this;
+    withClearColor(r: number[] | IndexedCollection): this;
     withClearColor(r: number, g: number, b: number): this;
     withClearColor(r: number, g: number, b: number, a: number): this;
-    withClearColor(r?: number | number[], g?: number, b?: number, a?: number): this {
+    withClearColor(r?: number | number[] | IndexedCollection, g?: number, b?: number, a?: number): this {
         let color;
         if (r === undefined) {
             color = [0.0, 0.0, 0.0, 1.0];

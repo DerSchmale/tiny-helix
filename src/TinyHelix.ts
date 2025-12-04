@@ -25,6 +25,7 @@ export class TinyHelix {
     private _options: TinyHelixOptions = {};
     private _backbuffer: Texture | null = null;
     private _backbufferTarget: RenderTarget | null = null;
+    private _shaderIncludes: Map<string, string> = new Map();
 
     /**
      * Create a new TinyHelix instance. Call `initialize()` before rendering.
@@ -46,6 +47,21 @@ export class TinyHelix {
         if (options.depthStencilFormat) {
             // TODO: Create depth texture
         }
+    }
+
+    /**
+     * Add a named include for all shader code. The include will be expanded
+     * in any shader code created through {@link TinyHelix.createShader}.
+     * The include name must be unique within the shader code. This allows
+     * using `#include<name>` in the shader code to include other files.
+     * While this is not standard WGSL, it's too useful not to support.
+     '
+     * @param name - The name as used in the `#include<name>` directive.
+     * @param source - The code the include should expand to.
+     */
+    addShaderInclude(name: string, source: string): this {
+        this._shaderIncludes.set(name, source);
+        return this;
     }
 
     /**
@@ -101,7 +117,13 @@ export class TinyHelix {
      */
     createShader(): ShaderBuilder
     {
-        return new ShaderBuilder(this._context);
+        let builder = new ShaderBuilder(this._context);
+
+        for (const [name, source] of this._shaderIncludes) {
+            builder = builder.withInclude(name, source);
+        }
+
+        return builder;
     }
 
     /**

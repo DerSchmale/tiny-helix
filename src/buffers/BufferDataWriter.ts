@@ -1,4 +1,5 @@
 import {float32ToFloat16} from "../utils/float32ToFloat16";
+import {IndexedCollection} from "../utils/IndexedCollection";
 
 /**
  * Utility for incrementally building binary data into an ArrayBuffer.
@@ -139,26 +140,26 @@ export class BufferDataWriter {
     }
 
     /** Push two 32-bit floats (little-endian). */
-    pushFloat32x2(x: number, y: number): this {
-        this.pushFloat32(x);
-        this.pushFloat32(y);
+    pushFloat32x2(arr: [number, number] | IndexedCollection): this {
+        this.pushFloat32(arr[0]);
+        this.pushFloat32(arr[1]);
         return this;
     }
 
     /** Push four 32-bit floats (little-endian). */
-    pushFloat32x3(x: number, y: number, z: number): this {
-        this.pushFloat32(x);
-        this.pushFloat32(y);
-        this.pushFloat32(z);
+    pushFloat32x3(arr: [number, number, number] | IndexedCollection): this {
+        this.pushFloat32(arr[0]);
+        this.pushFloat32(arr[1]);
+        this.pushFloat32(arr[2]);
         return this;
     }
 
     /** Push an 8-bit float (little-endian). */
-    pushFloat32x4(x: number, y: number, z: number, w: number): this {
-        this.pushFloat32(x);
-        this.pushFloat32(y);
-        this.pushFloat32(z);
-        this.pushFloat32(w);
+    pushFloat32x4(arr: [number, number, number, number] | IndexedCollection): this {
+        this.pushFloat32(arr[0]);
+        this.pushFloat32(arr[1]);
+        this.pushFloat32(arr[2]);
+        this.pushFloat32(arr[3]);
         return this;
     }
 
@@ -170,26 +171,26 @@ export class BufferDataWriter {
     }
 
     /** Push two unsigned 32-bit integers (little-endian). */
-    pushUint32x2(x: number, y: number): this {
-        this.pushUint32(x);
-        this.pushUint32(y);
+    pushUint32x2(arr: [number, number] | Uint32Array): this {
+        this.pushUint32(arr[0]);
+        this.pushUint32(arr[1]);
         return this;
     }
 
     /** Push three unsigned 32-bit integers (little-endian). */
-    pushUint32x3(x: number, y: number, z: number): this {
-        this.pushUint32(x);
-        this.pushUint32(y);
-        this.pushUint32(z);
+    pushUint32x3(arr: [number, number, number] | Uint32Array): this {
+        this.pushUint32(arr[0]);
+        this.pushUint32(arr[1]);
+        this.pushUint32(arr[2]);
         return this;
     }
 
     /** Push four unsigned 32-bit integers (little-endian). */
-    pushUint32x4(x: number, y: number, z: number, w: number): this {
-        this.pushUint32(x);
-        this.pushUint32(y);
-        this.pushUint32(z);
-        this.pushUint32(w);
+    pushUint32x4(arr: [number, number, number, number] | Uint32Array): this {
+        this.pushUint32(arr[0]);
+        this.pushUint32(arr[1]);
+        this.pushUint32(arr[2]);
+        this.pushUint32(arr[3]);
         return this;
     }
 
@@ -201,26 +202,26 @@ export class BufferDataWriter {
     }
 
     /** Push two signed 32-bit integers (little-endian). */
-    pushSint32x2(x: number, y: number): this {
-        this.pushSint32(x);
-        this.pushSint32(y);
+    pushSint32x2(arr: [number, number] | Int32Array): this {
+        this.pushSint32(arr[0]);
+        this.pushSint32(arr[1]);
         return this;
     }
 
     /** Push three signed 32-bit integers (little-endian). */
-    pushSint32x3(x: number, y: number, z: number): this {
-        this.pushSint32(x);
-        this.pushSint32(y);
-        this.pushSint32(z);
+    pushSint32x3(arr: [number, number, number] | Int32Array): this {
+        this.pushSint32(arr[0]);
+        this.pushSint32(arr[1]);
+        this.pushSint32(arr[2]);
         return this;
     }
 
     /** Push four signed 32-bit integers (little-endian). */
-    pushSint32x4(x: number, y: number, z: number, w: number): this {
-        this.pushSint32(x);
-        this.pushSint32(y);
-        this.pushSint32(z);
-        this.pushSint32(w);
+    pushSint32x4(arr: [number, number, number, number] | Int32Array): this {
+        this.pushSint32(arr[0]);
+        this.pushSint32(arr[1]);
+        this.pushSint32(arr[2]);
+        this.pushSint32(arr[3]);
         return this;
     }
 

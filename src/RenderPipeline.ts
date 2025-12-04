@@ -3,6 +3,9 @@ import {mapUndefined} from "./utils/mapUndefined";
 import {WebGPUContext} from "./WebGPUContext";
 import {Mesh} from "./Mesh";
 
+/**
+ * Face culling modes used by the render pipeline primitive state.
+ */
 export enum CullMode {
     None = 'none',
     Front = 'front',
@@ -109,6 +112,7 @@ export class RenderPipelineBuilder {
     }
 
     withBlendMode(): this {
+        throw new Error("not implemented yet");
         this.lastColorTarget.blend = undefined;
         return this;
     }
