@@ -206,5 +206,5 @@ export class BindGroupLayoutBuilder {
             entries: this._entries
         });
         return new BindGroupLayout(inner, this._ctx, this._indices, this._uboLayouts)
-    }S
+    }
 }

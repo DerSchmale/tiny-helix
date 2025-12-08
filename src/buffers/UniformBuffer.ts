@@ -294,8 +294,9 @@ export class UniformBuffer implements IBuffer {
     /**
      * Upload the current buffer contents to the GPU.
      */
-    upload() {
+    upload(): this {
         this._buffer._uploadData(this._ctx);
+        return this;
     }
 
     /**
