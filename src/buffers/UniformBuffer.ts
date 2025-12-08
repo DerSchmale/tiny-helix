@@ -193,7 +193,6 @@ export class UniformBufferLayout {
  */
 export class UniformBuffer implements IBuffer {
     private _buffer: Buffer;
-    private _layout: UniformBufferLayout;
     private _data: ArrayBuffer;
     private _ctx: WebGPUContext;
     private _dataViews: Map<string, [Member, IndexedCollection]> = new Map();
@@ -204,7 +203,6 @@ export class UniformBuffer implements IBuffer {
      */
     constructor(layout: UniformBufferLayout, ctx: WebGPUContext) {
         const data = new ArrayBuffer(layout.size);
-        this._layout = layout;
         this._buffer = new BufferBuilder(ctx)
             .withUsage(GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST)
             .withData(data, true)

@@ -1,11 +1,13 @@
 import {WebGPUContext, WebGPUContextOptions} from './WebGPUContext';
 import {CommandEncoder} from "./CommandEncoder";
-import {Texture} from "./Texture";
+import {Texture, TextureBuilder} from "./Texture";
 import {RenderTarget, RenderTargetBuilder} from "./RenderTarget";
 import {ShaderBuilder} from "./Shader";
 import {RenderPipelineBuilder} from "./RenderPipeline";
 import {MeshBuilder} from "./Mesh";
 import {UniformBuffer, UniformBufferLayout, UniformBufferLayoutBuilder} from "./buffers/UniformBuffer";
+import {BindGroupBuilder, BindGroupLayout, BindGroupLayoutBuilder} from "./BindGroup";
+import {SamplerBuilder} from "./Sampler";
 
 /**
  * Options for initializing TinyHelix
@@ -26,12 +28,14 @@ export class TinyHelix {
     private _backbuffer: Texture | null = null;
     private _backbufferTarget: RenderTarget | null = null;
     private _shaderIncludes: Map<string, string> = new Map();
+    private _canvas: HTMLCanvasElement;
 
     /**
      * Create a new TinyHelix instance. Call `initialize()` before rendering.
      */
-    constructor() {
+    constructor(canvas: HTMLCanvasElement) {
         this._context = new WebGPUContext();
+        this._canvas = canvas;
     }
 
     /**
@@ -40,6 +44,7 @@ export class TinyHelix {
      * @example await tiny.initialize({ canvas: myCanvas });
      */
     async initialize(options: TinyHelixOptions = {}) {
+        options.canvas = this._canvas;
         this._options = options;
 
         await this._context.initialize(options);
@@ -127,6 +132,22 @@ export class TinyHelix {
     }
 
     /**
+     * Create a BindGroupLayoutBuilder for creating a BindGroupLayout.
+     */
+    createBindGroupLayout(): BindGroupLayoutBuilder
+    {
+        return new BindGroupLayoutBuilder(this._context);
+    }
+
+    /**
+     * Create a BindGroupBuilder for creating a BindGroup.
+     */
+    createBindGroup(layout: BindGroupLayout): BindGroupBuilder
+    {
+        return new BindGroupBuilder(this._context, layout);
+    }
+
+    /**
      * Create a MeshBuilder for creating a Mesh.
      */
     createMesh(): MeshBuilder
@@ -140,6 +161,22 @@ export class TinyHelix {
     createRenderPipeline(): RenderPipelineBuilder
     {
         return new RenderPipelineBuilder(this._context);
+    }
+
+    /**
+     * Create a SamplerBuilder for creating a Sampler.
+     */
+    createSampler(): SamplerBuilder
+    {
+        return new SamplerBuilder(this._context);
+    }
+
+    /**
+     * Create a TextureBuilder for creating a Texture.
+     */
+    createTexture(): TextureBuilder
+    {
+        return new TextureBuilder(this._context)
     }
 
     /**

@@ -2,15 +2,7 @@ import {Shader} from "./Shader";
 import {mapUndefined} from "./utils/mapUndefined";
 import {WebGPUContext} from "./WebGPUContext";
 import {Mesh} from "./Mesh";
-
-/**
- * Face culling modes used by the render pipeline primitive state.
- */
-export enum CullMode {
-    None = 'none',
-    Front = 'front',
-    Back = 'back'
-}
+import {CullMode} from "./enums";
 
 /**
  * Thin wrapper around GPURenderPipeline exposing a small helper for attribute

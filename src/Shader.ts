@@ -2,6 +2,7 @@ import {WebGPUContext} from "./WebGPUContext";
 import {BindGroupBuilder, BindGroupLayout, BindGroupLayoutBuilder} from "./BindGroup";
 
 type AttributeMap = Map<string, number>;
+type BindGroupLayoutFunc = (builder: BindGroupLayoutBuilder) => void;
 
 /**
  * Wrapper around GPUShaderModule. Keeps a map of vertex attribute names to
@@ -107,11 +108,18 @@ export class ShaderBuilder {
      * Declare a bind group layout used by this shader. The provided builder
      * callback is used to construct the layout description.
      */
-    withBindGroup(index: number, buildFunc?: (builder: BindGroupLayoutBuilder) => void): this {
-        const builder = new BindGroupLayoutBuilder(this._ctx);
-        buildFunc?.(builder);
+    withBindGroup(index: number, layout: BindGroupLayout): this;
+    withBindGroup(index: number, buildFunc: (builder: BindGroupLayoutBuilder) => void): this;
+    withBindGroup(index: number, layout: BindGroupLayout | BindGroupLayoutFunc): this {
         this._bindGroupLayouts = this._bindGroupLayouts ?? [];
-        this._bindGroupLayouts[index] = builder.build();
+        if (layout instanceof BindGroupLayout) {
+            this._bindGroupLayouts[index] = layout;
+        }
+        else {
+            const builder = new BindGroupLayoutBuilder(this._ctx);
+            layout(builder);
+            this._bindGroupLayouts[index] = builder.build();
+        }
         return this;
     }
 

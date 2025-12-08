@@ -13,10 +13,12 @@ export default TinyHelix;
 
 export * from "./BindGroup";
 export * from "./CommandEncoder";
+export * from "./enums";
 export * from "./Mesh";
 export * from "./RenderPass";
 export * from "./RenderPipeline";
 export * from "./RenderTarget";
+export * from "./Sampler";
 export * from "./Shader";
 export * from "./Texture";
 export * from "./buffers/Buffer";

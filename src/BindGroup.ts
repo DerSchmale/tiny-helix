@@ -2,6 +2,8 @@ import {WebGPUContext} from "./WebGPUContext";
 import {UniformBuffer, UniformBufferLayout} from "./buffers/UniformBuffer";
 import {IBuffer} from "./buffers/IBuffer";
 import {mapUndefined} from "./utils/mapUndefined";
+import {Texture} from "./Texture";
+import {Sampler} from "./Sampler";
 
 /**
  * Lightweight wrapper around a GPUBindGroup.
@@ -46,13 +48,32 @@ export class BindGroupBuilder {
     }
 
     /**
-     * Attach a uniform buffer to the bind group at the given binding index.
-     * @param index - binding index in the bind group layout
+     * Attach a uniform buffer to the bind group
+     * @param fieldName
      * @param buffer - an object implementing IBuffer (provides underlying GPUBuffer)
      */
-    withUniformBuffer(index: number, buffer: IBuffer): this {
+    withUniformBuffer(fieldName: string, buffer: IBuffer): this {
+        const index = this._layout._getBindingIndex(fieldName);
         this._entries[index] = {
             binding: index, resource: { buffer: buffer._getBuffer()._inner }
+        };
+        return this;
+    }
+
+    /** Attach a texture to the bind group. */
+    withTexture(fieldName: string, texture: Texture): this {
+        const index = this._layout._getBindingIndex(fieldName);
+        this._entries[index] = {
+            binding: index, resource: texture._inner
+        };
+        return this;
+    }
+
+    /** Attach a sampler to the bind group at the given binding index. */
+    withSampler(fieldName: string, sampler: Sampler): this {
+        const index = this._layout._getBindingIndex(fieldName);
+        this._entries[index] = {
+            binding: index, resource: sampler._inner
         };
         return this;
     }
@@ -78,12 +99,14 @@ export class BindGroupBuilder {
  */
 export class BindGroupLayout {
     /** @internal */
-    _inner: GPUBindGroupLayout;
+    readonly _inner: GPUBindGroupLayout;
     private _uboLayouts: Map<string, UniformBufferLayout>;
     private _ctx: WebGPUContext;
+    private _indices: Map<string, number>;
 
-    constructor(inner: GPUBindGroupLayout, ctx: WebGPUContext, uboLayouts: Map<string, UniformBufferLayout>) {
+    constructor(inner: GPUBindGroupLayout, ctx: WebGPUContext, indices: Map<string, number>, uboLayouts: Map<string, UniformBufferLayout>) {
         this._inner = inner;
+        this._indices = indices;
         this._uboLayouts = uboLayouts;
         this._ctx = ctx;
     }
@@ -98,11 +121,17 @@ export class BindGroupLayout {
     createUniformBuffer(name: string): UniformBuffer | undefined
     {
         const layout = this._uboLayouts.get(name);
-        mapUndefined(layout, layout => new UniformBuffer(layout, this._ctx));
-        return
+        return mapUndefined(layout, layout => new UniformBuffer(layout, this._ctx));
     }
-    // TODO: Should we be able to create a bind group builder from this?
-    // Or UniformBuffers?
+
+    _getBindingIndex(fieldName: string): number
+    {
+        const index = this._indices.get(fieldName);
+        if (index === undefined) {
+            throw(`No field name found for ${fieldName} in bind group layout.`);
+        }
+        return index;
+    }
 }
 
 /**
@@ -111,6 +140,7 @@ export class BindGroupLayout {
  */
 export class BindGroupLayoutBuilder {
     private _entries: GPUBindGroupLayoutEntry[] = [];
+    private _indices: Map<string, number> = new Map();
     // TODO: add other buffer/texture types
     private _uboLayouts: Map<string, UniformBufferLayout> = new Map();
     private _label?: string;
@@ -141,7 +171,28 @@ export class BindGroupLayoutBuilder {
             visibility: visibility ?? GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE,
             buffer: {type: 'uniform'}
         };
+        this._indices.set(field_name, index);
         this._uboLayouts.set(field_name, layout);
+        return this;
+    }
+
+    withTexture(index: number, field_name: string, visibility?: GPUShaderStageFlags): this {
+        this._entries[index] = {
+            binding: index,
+            visibility: visibility ?? GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE,
+            texture: {sampleType: 'float'}
+        };
+        this._indices.set(field_name, index);
+        return this;
+    }
+
+    withSampler(index: number, field_name: string, visibility?: GPUShaderStageFlags): this {
+        this._entries[index] = {
+            binding: index,
+            visibility: visibility ?? GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE,
+            sampler: {type: 'filtering'}
+        };
+        this._indices.set(field_name, index);
         return this;
     }
 
@@ -154,6 +205,6 @@ export class BindGroupLayoutBuilder {
             label: this._label,
             entries: this._entries
         });
-        return new BindGroupLayout(inner, this._ctx, this._uboLayouts)
-    }
+        return new BindGroupLayout(inner, this._ctx, this._indices, this._uboLayouts)
+    }S
 }
