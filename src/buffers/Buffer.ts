@@ -98,10 +98,6 @@ export class Buffer implements IBuffer {
         this.data = data;
     }
 
-    _getBuffer(): Buffer {
-        return this;
-    }
-
     /** Size of the GPU buffer in bytes. */
     get size(): number { return this._inner.size; }
 
@@ -113,5 +109,9 @@ export class Buffer implements IBuffer {
         }
 
         ctx.device.queue.writeBuffer(this._inner, 0, this.data);
+    }
+
+    _getBufferResource(): GPUBindingResource {
+        return { buffer: this._inner };
     }
 }

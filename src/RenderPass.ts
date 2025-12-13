@@ -3,6 +3,7 @@ import {RenderPipeline} from "./RenderPipeline";
 import {Mesh} from "./Mesh";
 import {BindGroup} from "./BindGroup";
 import {IndexedCollection} from "./utils/IndexedCollection";
+import {mapUndefined} from "./utils/mapUndefined";
 
 /**
  * Lightweight wrapper around GPURenderPassEncoder. Provides a minimal API
@@ -22,13 +23,11 @@ export class RenderPass {
         this._inner = inner;
     }
 
-
     /**
      * Set the render pipeline to use for the next draw calls.
      * @param pipeline
      */
-    setRenderPipeline(pipeline: RenderPipeline): this
-    {
+    setRenderPipeline(pipeline: RenderPipeline): this {
         if (this._renderPipeline != pipeline) {
             this._inner.setPipeline(pipeline._inner);
             this._renderPipeline = pipeline;
@@ -41,8 +40,7 @@ export class RenderPass {
      * Sets the mesh to use for the next draw calls.
      * @param mesh
      */
-    setMesh(mesh: Mesh): this
-    {
+    setMesh(mesh: Mesh): this {
         for (let i = 0; i < mesh.numStreams; ++i) {
             const vertex_buffer = mesh.getVertexBuffer(i);
             this._inner.setVertexBuffer(i, vertex_buffer._inner);
@@ -54,8 +52,7 @@ export class RenderPass {
         if (indexBuffer) {
             this._inner.setIndexBuffer(indexBuffer._inner, mesh.indexFormat);
             this._numIndices = mesh.numIndices;
-        }
-        else {
+        } else {
             this._numIndices = 0;
         }
 
@@ -67,8 +64,7 @@ export class RenderPass {
      * @param index - bind group index in the render pipeline layout
      * @param bindGroup - a `BindGroup` instance
      */
-    setBindGroup(index: number, bindGroup: BindGroup): this
-    {
+    setBindGroup(index: number, bindGroup: BindGroup): this {
         this._inner.setBindGroup(index, bindGroup._inner);
         return this;
     }
@@ -76,12 +72,10 @@ export class RenderPass {
     /**
      * Issue a draw call using the currently set pipeline and mesh.
      */
-    draw(): this
-    {
+    draw(): this {
         if (this._numIndices) {
             this._inner.drawIndexed(this._numIndices, 1, 0, 0, 0);
-        }
-        else {
+        } else {
             this._inner.draw(this._numVertices, 1, 0, 0);
         }
         return this;
@@ -103,25 +97,28 @@ export class RenderPass {
  * calling `build()` to obtain a `RenderPass` instance.
  */
 export class RenderPassBuilder {
-    _encoder: GPUCommandEncoder;
-    _label?: string;
-    _colorTargets: RenderTarget[] = [];
-    _clearColors: number[][] = [];
-    _defaultTarget: RenderTarget;
-    _clearDepth?: number;
-    _clearStencil?: number;
+    private _encoder: GPUCommandEncoder;
+    private _label?: string;
+    private _colorTargets: RenderTarget[] = [];
+    private _clearColors: number[][] = [];
+    private _defaultTarget: RenderTarget;
+    private _defaultDepthTarget?: RenderTarget;
+    private _depthTarget?: RenderTarget;
+    private _clearDepth?: number;
+    private _clearStencil?: number;
 
     /**
      * Create a new builder instance. This should only be called from the CommandEncoder
      * instance (see {@link CommandEncoder.createRenderPass}).
      * @param commandEncoder
      * @param defaultTarget
-     *
+     * @param defaultDepthTarget
      * @internal
      */
-    constructor(commandEncoder: GPUCommandEncoder, defaultTarget: RenderTarget) {
+    constructor(commandEncoder: GPUCommandEncoder, defaultTarget: RenderTarget, defaultDepthTarget?: RenderTarget) {
         this._encoder = commandEncoder;
         this._defaultTarget = defaultTarget;
+        this._defaultDepthTarget = defaultDepthTarget;
     }
 
     /**
@@ -138,6 +135,11 @@ export class RenderPassBuilder {
      */
     withColorTarget(target: RenderTarget): this {
         this._colorTargets.push(target);
+        return this;
+    }
+
+    withDepthStencilTarget(target: RenderTarget): this {
+        this._depthTarget = target;
         return this;
     }
 
@@ -162,8 +164,7 @@ export class RenderPassBuilder {
         // rendering to the default target is special cased, so we need to set the clear color for the last target
         if (this._colorTargets.length === 0) {
             this._clearColors[0] = color;
-        }
-        else {
+        } else {
             this._clearColors[this._colorTargets.length - 1] = color;
         }
 
@@ -171,14 +172,18 @@ export class RenderPassBuilder {
     }
 
     /**
-     * Set clear values for depth and stencil attachments. If called without
-     * arguments default values will be used (depth=1.0, stencil=0).
+     * Set the clear stencil value
      */
-    withClearDepthStencil(): this;
-    withClearDepthStencil(depth: number): this;
-    withClearDepthStencil(depth?: number, stencil?: number): this {
-        this._clearDepth = depth ?? 1.0;
-        this._clearStencil = stencil ?? 0;
+    withClearStencil(stencil: number): this {
+        this._clearStencil = stencil;
+        return this;
+    }
+
+    /**
+     * Set the clear depth value
+     */
+    withClearDepth(depth: number): this {
+        this._clearDepth = depth;
         return this;
     }
 
@@ -187,21 +192,36 @@ export class RenderPassBuilder {
      * the low-level GPURenderPassEncoder.
      */
     build(): RenderPass {
-        const targets = this._colorTargets.length ? this._colorTargets : [this._defaultTarget];
-        const colorAttachments: GPURenderPassColorAttachment[] = [];
+        let targets: RenderTarget[];
+        let depthTarget: RenderTarget | undefined;
 
-        for (let i = 0; i < targets.length; ++i) {
-            colorAttachments.push({
-                view: targets[i]._inner,
-                loadOp: this._clearColors[i] ? 'clear' : 'load',
-                storeOp: 'store',
-                clearValue: this._clearColors[i]
-            })
+        // if anything was specified specifically, use those, otherwise use the defaults
+        if (this._colorTargets.length || !!this._depthTarget) {
+            targets = this._colorTargets;
+            depthTarget = this._depthTarget;
+        } else {
+            targets = [this._defaultTarget];
+            depthTarget = this._defaultDepthTarget;
         }
+
+        const colorAttachments: GPURenderPassColorAttachment[] = targets.map((target, i) => ({
+            view: target._inner,
+            loadOp: this._clearColors[i] ? 'clear' : 'load',
+            storeOp: 'store',
+            clearValue: this._clearColors[i]
+        }));
 
         const desc: GPURenderPassDescriptor = {
             colorAttachments,
-            depthStencilAttachment: undefined,
+            depthStencilAttachment: mapUndefined(depthTarget, target => ({
+                view: target._inner,
+                depthClearValue: this._clearDepth,
+                stencilClearValue: this._clearStencil,
+                depthLoadOp: this._clearDepth != undefined ? 'clear' : 'load',
+                stencilLoadOp: this._clearStencil != undefined ? 'clear' : 'load',
+                depthStoreOp: mapUndefined(this._clearDepth, () => 'store'),
+                stencilStoreOp: mapUndefined(this._clearStencil, () => 'store')
+            })),
             label: this._label
         };
 

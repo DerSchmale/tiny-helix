@@ -132,3 +132,40 @@ export enum TextureFormat {
     Astc12x12Unorm = "astc-12x12-unorm",
     Astc12x12UnormSrgb = "astc-12x12-unorm-srgb"
 }
+
+export enum BlendFactor {
+    Zero = "zero",
+    One = "one",
+    SrcColor = "src",
+    OneMinusSrcColor = "one-minus-src",
+    SrcAlpha = "src-alpha",
+    OneMinusSrcAlpha = "one-minus-src-alpha",
+    DstColor = "dst",
+    OneMinusDstColor = "one-minus-dst",
+    DstAlpha = "dst-alpha",
+    OneMinusDstAlpha = "one-minus-dst-alpha",
+    SrcAlphaSaturated = "src-alpha-saturated",
+    Constant = "constant",
+    OneMinusConstant = "one-minus-constant",
+    Src1Color = "src1",
+    OneMinusSrc1Color = "one-minus-src1",
+    Src1Alpha = "src1-alpha",
+    OneMinusSrc1Alpha = "one-minus-src1-alpha"
+}
+
+export enum CompareFunction {
+    Never = "never",
+    Less = "less",
+    Equal = "equal",
+    LessEqual = "less-equal",
+    Greater = "greater",
+    NotEqual = "not-equal",
+    GreaterEqual = "greater-equal",
+    Always = "always"
+}
+
+export enum StorageTextureAccess {
+    ReadWrite = "read-write",
+    Read = "read-only",
+    Write = "write-only"
+}

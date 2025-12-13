@@ -303,7 +303,7 @@ export class UniformBuffer implements IBuffer {
      * Internal accessor returning the underlying Buffer wrapper.
      * @internal
      */
-    _getBuffer(): Buffer {
-        return this._buffer;
+    _getBufferResource(): GPUBindingResource {
+        return { buffer: this._buffer._inner };
     }
 }

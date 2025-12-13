@@ -2,7 +2,8 @@ import {Shader} from "./Shader";
 import {mapUndefined} from "./utils/mapUndefined";
 import {WebGPUContext} from "./WebGPUContext";
 import {Mesh} from "./Mesh";
-import {CullMode} from "./enums";
+import {CompareFunction, CullMode, TextureFormat} from "./enums";
+import {BlendMode} from "./BlendMode";
 
 /**
  * Thin wrapper around GPURenderPipeline exposing a small helper for attribute
@@ -31,10 +32,12 @@ export class RenderPipeline {
  * optionally a `Mesh` (to derive vertex buffer layouts) before calling `build()`.
  */
 export class RenderPipelineBuilder {
+    private _ctx: WebGPUContext;
     private _shader?: Shader;
     private _colorTargets: GPUColorTargetState[] = [];
-    private _defaultColorState: GPUColorTargetState;
-    private _ctx: WebGPUContext;
+    private _defaultColorState: GPUColorTargetState[];
+    private _depthState?: GPUDepthStencilState;
+    private _defaultDepthState?: GPUDepthStencilState;
     private _vertexEntry: string | undefined = undefined;
     private _fragmentEntry: string | undefined = undefined;
     private _label: string | undefined = undefined;
@@ -42,13 +45,18 @@ export class RenderPipelineBuilder {
     private _cullMode: CullMode = CullMode.Back;
     private _mesh: Mesh | undefined = undefined;
 
-    constructor(ctx: WebGPUContext) {
+    constructor(ctx: WebGPUContext, defaultDepthFormat?: TextureFormat) {
         this._ctx = ctx;
-        this._defaultColorState = {
+        this._defaultColorState = [{
             format: ctx.format,
             blend: undefined,
             writeMask: GPUColorWrite.ALL
-        }
+        }];
+        this._defaultDepthState = mapUndefined(defaultDepthFormat, format => ({
+            format,
+            depthWriteEnabled: true,
+            depthCompare: 'less',
+        }))
     }
 
     /** Assign a human-readable label for the pipeline (useful in graphics debuggers). */
@@ -88,12 +96,53 @@ export class RenderPipelineBuilder {
     }
 
     /** Add a color target with the given texture format. */
-    withColorTarget(format: GPUTextureFormat): this {
+    withColorTarget(format: TextureFormat): this {
         this._colorTargets.push({
             format,
             blend: undefined,
             writeMask: GPUColorWrite.ALL
         });
+        return this;
+    }
+
+    /**
+     * Add a depth target with the given texture format.
+     */
+    withDepthTarget(format: TextureFormat): this {
+        this._depthState = {
+            format,
+            ...this._defaultDepthState
+        };
+        return this;
+    }
+
+    /**
+     * Set the depth compare function. Default is `less`.
+     * @param compare
+     */
+    withDepthCompare(compare: CompareFunction): this {
+        const target = this._depthState ?? this._defaultDepthState;
+        if (!target) {
+            console.warn("No depth target set. Setting depth compare function has no effect.");
+        }
+        else {
+            target.depthCompare = compare;
+        }
+        return this;
+    }
+
+    /**
+     * Enable or disable depth writes. Default is `true`.
+     * @param enabled
+     */
+    withDepthWrite(enabled: boolean): this {
+        const target = this._depthState ?? this._defaultDepthState;
+        if (!target) {
+            console.warn("No depth target set. Setting depth write enabled has no effect.");
+        }
+        else {
+            target.depthWriteEnabled = enabled;
+        }
         return this;
     }
 
@@ -103,9 +152,9 @@ export class RenderPipelineBuilder {
         return this;
     }
 
-    withBlendMode(): this {
-        throw new Error("not implemented yet");
-        this.lastColorTarget.blend = undefined;
+    /** Set the blend mode for the last assigned (or default) color target. */
+    withBlendMode(blendMode: BlendMode): this {
+        this.lastColorTarget.blend = blendMode._inner;
         return this;
     }
 
@@ -124,7 +173,19 @@ export class RenderPipelineBuilder {
             throw new Error("Shader does not contain a vertex entry point. Use ShaderBuilder.withVertexShader() to set one.");
         }
 
-        const colorTargets = this._colorTargets.length ? this._colorTargets : [this._defaultColorState];
+        let colorTargets: GPUColorTargetState[];
+        let depthState: GPUDepthStencilState | undefined;
+
+        if (this._colorTargets.length || !!this._depthState) {
+            colorTargets = this._colorTargets;
+            depthState = this._depthState;
+        }
+        else {
+            // only use defaults if no targets were set explicitly
+            colorTargets = this._defaultColorState;
+            depthState = this._defaultDepthState;
+        }
+
         const primitive: GPUPrimitiveState | undefined = mapUndefined(this._mesh, mesh => ({
             topology: mesh.topology,
             frontFace: mesh.frontFace,
@@ -163,6 +224,7 @@ export class RenderPipelineBuilder {
             label: this._label,
             layout,
             primitive,
+            depthStencil: depthState,
             vertex: {
                 buffers,
                 module: shader._inner,
@@ -178,11 +240,10 @@ export class RenderPipelineBuilder {
         }
 
         const inner = this._ctx.device.createRenderPipeline(desc);
-
         return new RenderPipeline(inner, shader);
     }
 
     private get lastColorTarget(): GPUColorTargetState {
-        return this._colorTargets.length ? this._colorTargets[this._colorTargets.length - 1] : this._defaultColorState;
+        return this._colorTargets.length ? this._colorTargets[this._colorTargets.length - 1] : this._defaultColorState[0];
     }
 }

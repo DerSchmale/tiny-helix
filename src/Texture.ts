@@ -1,11 +1,12 @@
 import {WebGPUContext} from "./WebGPUContext";
 import {TextureFormat} from "./enums";
+import {IBuffer} from "./buffers/IBuffer";
 
 /**
  * Small wrapper around GPUTexture providing convenience constructors and
  * an internal accessor for low-level interop.
  */
-export class Texture {
+export class Texture implements IBuffer {
     /** @internal */
     readonly _inner: GPUTexture;
 
@@ -20,6 +21,10 @@ export class Texture {
     constructor(inner: GPUTexture) {
         this._inner = inner;
     }
+
+    _getBufferResource(): GPUBindingResource {
+        return this._inner.createView();
+    }
 }
 
 export class TextureBuilder {
@@ -27,6 +32,7 @@ export class TextureBuilder {
     private _size: [number, number, number] = [1, 1, 1];
     private _data: ImageBitmap | GPUAllowSharedBufferSource | undefined = undefined;
     private _format: TextureFormat = TextureFormat.Rgba8UnormSrgb;
+    private _usage: GPUTextureUsageFlags = GPUTextureUsage.TEXTURE_BINDING;
 
     constructor(ctx: WebGPUContext) {
         this._ctx = ctx;
@@ -53,13 +59,17 @@ export class TextureBuilder {
         return this;
     }
 
+    withUsage(usage: GPUTextureUsageFlags): this {
+        this._usage |= usage;
+        return this;
+    }
+
     build(): Texture {
-        let usage = GPUTextureUsage.TEXTURE_BINDING;
         if (this._data) {
-            usage |= GPUTextureUsage.COPY_DST;
+            this._usage |= GPUTextureUsage.COPY_DST;
         }
         const inner = this._ctx.device.createTexture({
-            format: this._format, size: this._size, usage
+            format: this._format, size: this._size, usage: this._usage
         })
         if (this._data instanceof ImageBitmap) {
             this._ctx.device.queue.copyExternalImageToTexture({source: this._data!}, {texture: inner}, [this._size[0], this._size[1], 1]);

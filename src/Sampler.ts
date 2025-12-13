@@ -4,6 +4,8 @@ import {AddressMode, FilterMode} from "./enums";
 export class Sampler {
     readonly _inner: GPUSampler;
 
+    private static DEFAULT_TRILINEAR: Sampler;
+
     constructor(inner: GPUSampler) {
         this._inner = inner;
     }

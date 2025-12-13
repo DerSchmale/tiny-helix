@@ -6,8 +6,11 @@ import {ShaderBuilder} from "./Shader";
 import {RenderPipelineBuilder} from "./RenderPipeline";
 import {MeshBuilder} from "./Mesh";
 import {UniformBuffer, UniformBufferLayout, UniformBufferLayoutBuilder} from "./buffers/UniformBuffer";
-import {BindGroupBuilder, BindGroupLayout, BindGroupLayoutBuilder} from "./BindGroup";
+import BindGroupLayoutBuilder, {BindGroupBuilder, BindGroupLayout} from "./BindGroup";
 import {SamplerBuilder} from "./Sampler";
+import {ComputePipelineBuilder} from "./ComputePipeline";
+import {TextureFormat} from "./enums";
+import {mapUndefined} from "./utils/mapUndefined";
 
 /**
  * Options for initializing TinyHelix
@@ -15,7 +18,7 @@ import {SamplerBuilder} from "./Sampler";
 export interface TinyHelixOptions extends WebGPUContextOptions {
     // Possible to add more options later
     /** Optional format to use for the depth/stencil buffer */
-    depthStencilFormat?: GPUTextureFormat;
+    depthStencilFormat?: TextureFormat;
 }
 
 /**
@@ -25,8 +28,10 @@ export interface TinyHelixOptions extends WebGPUContextOptions {
 export class TinyHelix {
     private _context: WebGPUContext;
     private _options: TinyHelixOptions = {};
-    private _backbuffer: Texture | null = null;
-    private _backbufferTarget: RenderTarget | null = null;
+    private _backbuffer?: Texture;
+    private _backbufferTarget?: RenderTarget;
+    private _depthStencil?: Texture;
+    private _depthStencilTarget?: RenderTarget;
     private _shaderIncludes: Map<string, string> = new Map();
     private _canvas: HTMLCanvasElement;
 
@@ -49,9 +54,13 @@ export class TinyHelix {
 
         await this._context.initialize(options);
 
-        if (options.depthStencilFormat) {
-            // TODO: Create depth texture
-        }
+        this._createDepthStencil();
+    }
+
+    resize(width: number, height: number) {
+        this._canvas.width = width;
+        this._canvas.height = height;
+        this._createDepthStencil();
     }
 
     /**
@@ -72,7 +81,7 @@ export class TinyHelix {
     /**
      * Return the chosen depth/stencil format if configured.
      */
-    depthStencilFormat(): GPUTextureFormat | undefined {
+    depthStencilFormat(): TextureFormat | undefined {
         return this._options.depthStencilFormat;
     }
 
@@ -106,15 +115,16 @@ export class TinyHelix {
      */
     startFrame() {
         this._backbuffer = Texture.from_webgpu(this._context.getCurrentTexture());
-        this._backbufferTarget = this.createRenderTarget(this._backbuffer).build();
+        this._backbufferTarget = this.createRenderTarget(this._backbuffer)
+            .build();
     }
 
     /**
      * Create a RenderTargetBuilder for a given texture.
      */
-    createRenderTarget(texture: Texture): RenderTargetBuilder
+    createRenderTarget(target: Texture): RenderTargetBuilder
     {
-        return new RenderTargetBuilder(texture);
+        return new RenderTargetBuilder(target);
     }
 
     /**
@@ -160,7 +170,15 @@ export class TinyHelix {
      */
     createRenderPipeline(): RenderPipelineBuilder
     {
-        return new RenderPipelineBuilder(this._context);
+        return new RenderPipelineBuilder(this._context, this.depthStencilFormat());
+    }
+
+    /**
+     * Create a ComputePipelineBuilder for creating a ComputePipeline.
+     */
+    createComputePipeline(): ComputePipelineBuilder
+    {
+        return new ComputePipelineBuilder(this._context);
     }
 
     /**
@@ -184,7 +202,7 @@ export class TinyHelix {
      * @param label - Optional debug label to assign to the encoder
      */
     createCommandEncoder(label?: string): CommandEncoder {
-        return new CommandEncoder(this.backbufferTarget, this._context, label);
+        return new CommandEncoder(this.backbufferTarget, this._depthStencilTarget, this._context, label);
     }
 
     /**
@@ -208,5 +226,20 @@ export class TinyHelix {
      */
     destroy(): void {
         this._context.destroy();
+    }
+
+    private _createDepthStencil() {
+        this._depthStencil = mapUndefined(this._options.depthStencilFormat, (f) =>
+            this.createTexture()
+                .withFormat(f)
+                .withSize(this._canvas.width, this._canvas.height)
+                .withUsage(GPUTextureUsage.RENDER_ATTACHMENT)
+                .build()
+        );
+
+        this._depthStencilTarget = mapUndefined(this._depthStencil, (t) =>
+            this.createRenderTarget(t)
+                .build()
+        );
     }
 }

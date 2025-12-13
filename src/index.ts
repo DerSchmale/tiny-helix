@@ -13,6 +13,8 @@ export default TinyHelix;
 
 export * from "./BindGroup";
 export * from "./CommandEncoder";
+export * from "./ComputePass";
+export * from "./ComputePipeline";
 export * from "./enums";
 export * from "./Mesh";
 export * from "./RenderPass";

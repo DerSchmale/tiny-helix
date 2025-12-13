@@ -1,5 +1,5 @@
 import {WebGPUContext} from "./WebGPUContext";
-import {BindGroupBuilder, BindGroupLayout, BindGroupLayoutBuilder} from "./BindGroup";
+import BindGroupLayoutBuilder, {BindGroupBuilder, BindGroupLayout} from "./BindGroup";
 
 type AttributeMap = Map<string, number>;
 type BindGroupLayoutFunc = (builder: BindGroupLayoutBuilder) => void;

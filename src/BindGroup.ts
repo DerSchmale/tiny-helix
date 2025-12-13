@@ -4,6 +4,8 @@ import {IBuffer} from "./buffers/IBuffer";
 import {mapUndefined} from "./utils/mapUndefined";
 import {Texture} from "./Texture";
 import {Sampler} from "./Sampler";
+import {TextureFormat} from "../dist";
+import {StorageTextureAccess} from "./enums";
 
 /**
  * Lightweight wrapper around a GPUBindGroup.
@@ -48,14 +50,14 @@ export class BindGroupBuilder {
     }
 
     /**
-     * Attach a uniform buffer to the bind group
+     * Attach a buffer to the bind group
      * @param fieldName
-     * @param buffer - an object implementing IBuffer (provides underlying GPUBuffer)
+     * @param buffer
      */
-    withUniformBuffer(fieldName: string, buffer: IBuffer): this {
+    withBuffer(fieldName: string, buffer: IBuffer): this {
         const index = this._layout._getBindingIndex(fieldName);
         this._entries[index] = {
-            binding: index, resource: { buffer: buffer._getBuffer()._inner }
+            binding: index, resource: buffer._getBufferResource()
         };
         return this;
     }
@@ -138,7 +140,7 @@ export class BindGroupLayout {
  * Builder for GPUBindGroupLayout. Currently supports adding uniform buffers
  * and their associated layout information.
  */
-export class BindGroupLayoutBuilder {
+class BindGroupLayoutBuilder {
     private _entries: GPUBindGroupLayoutEntry[] = [];
     private _indices: Map<string, number> = new Map();
     // TODO: add other buffer/texture types
@@ -176,6 +178,41 @@ export class BindGroupLayoutBuilder {
         return this;
     }
 
+    /**
+     * Add a storage buffer binding at the given index and record its layout.
+     * @param index - binding index
+     * @param field_name - a name used to reference the layout later
+     * @param visibility - shader stage visibility flags (defaults to FRAGMENT|COMPUTE)
+     */
+    withStorageBuffer(index: number, field_name: string, visibility?: GPUShaderStageFlags): this {
+        this._entries[index] = {
+            binding: index,
+            visibility: visibility ?? GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE,
+            buffer: {type: 'storage', hasDynamicOffset: true, minBindingSize: 4}
+        };
+        this._indices.set(field_name, index);
+        return this;
+    }
+
+    /**
+     * Add a storage texture binding at the given index. The texture will be
+     * write-only and use RGBA8Unorm format.
+     * @param index
+     * @param field_name
+     * @param format
+     * @param access_mode
+     * @param visibility
+     */
+    withStorageTexture(index: number, field_name: string, format: TextureFormat, access_mode: StorageTextureAccess, visibility?: GPUShaderStageFlags): this {
+        this._entries[index] = {
+            binding: index,
+            visibility: visibility ?? GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE,
+            storageTexture: {access: access_mode, format}
+        };
+        this._indices.set(field_name, index);
+        return this;
+    }
+
     withTexture(index: number, field_name: string, visibility?: GPUShaderStageFlags): this {
         this._entries[index] = {
             binding: index,
@@ -208,3 +245,5 @@ export class BindGroupLayoutBuilder {
         return new BindGroupLayout(inner, this._ctx, this._indices, this._uboLayouts)
     }
 }
+
+export default BindGroupLayoutBuilder
