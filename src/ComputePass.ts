@@ -56,9 +56,11 @@ export class ComputePassBuilder
 {
     private _label?: string;
     private _encoder: GPUCommandEncoder;
+    private _globalBindGroups: BindGroup[];
 
-    constructor(encoder: GPUCommandEncoder) {
+    constructor(encoder: GPUCommandEncoder, globalBindGroups: BindGroup[]) {
         this._encoder = encoder;
+        this._globalBindGroups = globalBindGroups;
     }
 
     /**
@@ -74,6 +76,10 @@ export class ComputePassBuilder
             label: this._label
         };
 
-        return new ComputePass(this._encoder.beginComputePass(desc));
+        const pass = new ComputePass(this._encoder.beginComputePass(desc));
+        for (let i = 0; i < this._globalBindGroups.length; ++i) {
+            pass.setBindGroup(i, this._globalBindGroups[i]);
+        }
+        return pass;
     }
 }

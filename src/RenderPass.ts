@@ -106,19 +106,18 @@ export class RenderPassBuilder {
     private _depthTarget?: RenderTarget;
     private _clearDepth?: number;
     private _clearStencil?: number;
+    private _globalBindGroups: BindGroup[];
 
     /**
      * Create a new builder instance. This should only be called from the CommandEncoder
      * instance (see {@link CommandEncoder.createRenderPass}).
-     * @param commandEncoder
-     * @param defaultTarget
-     * @param defaultDepthTarget
      * @internal
      */
-    constructor(commandEncoder: GPUCommandEncoder, defaultTarget: RenderTarget, defaultDepthTarget?: RenderTarget) {
+    constructor(commandEncoder: GPUCommandEncoder, globalBindGroups: BindGroup[], defaultTarget: RenderTarget, defaultDepthTarget?: RenderTarget) {
         this._encoder = commandEncoder;
         this._defaultTarget = defaultTarget;
         this._defaultDepthTarget = defaultDepthTarget;
+        this._globalBindGroups = globalBindGroups;
     }
 
     /**
@@ -225,6 +224,8 @@ export class RenderPassBuilder {
             label: this._label
         };
 
-        return new RenderPass(this._encoder.beginRenderPass(desc));
+        const pass = new RenderPass(this._encoder.beginRenderPass(desc));
+        this._globalBindGroups.forEach((group, i) => pass.setBindGroup(i, group));
+        return pass;
     }
 }

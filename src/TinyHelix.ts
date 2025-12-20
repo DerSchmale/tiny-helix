@@ -6,7 +6,7 @@ import {ShaderBuilder} from "./Shader";
 import {RenderPipelineBuilder} from "./RenderPipeline";
 import {MeshBuilder} from "./Mesh";
 import {UniformBuffer, UniformBufferLayout, UniformBufferLayoutBuilder} from "./buffers/UniformBuffer";
-import BindGroupLayoutBuilder, {BindGroupBuilder, BindGroupLayout} from "./BindGroup";
+import BindGroupLayoutBuilder, {BindGroup, BindGroupBuilder, BindGroupLayout} from "./BindGroup";
 import {SamplerBuilder} from "./Sampler";
 import {ComputePipelineBuilder} from "./ComputePipeline";
 import {TextureFormat} from "./enums";
@@ -34,6 +34,8 @@ export class TinyHelix {
     private _depthStencilTarget?: RenderTarget;
     private _shaderIncludes: Map<string, string> = new Map();
     private _canvas: HTMLCanvasElement;
+    private _globalBindBufferLayouts: BindGroupLayout[] = [];
+    private _globalBindBuffers: BindGroup[] = [];
 
     /**
      * Create a new TinyHelix instance. Call `initialize()` before rendering.
@@ -134,9 +136,8 @@ export class TinyHelix {
     {
         let builder = new ShaderBuilder(this._context);
 
-        for (const [name, source] of this._shaderIncludes) {
-            builder = builder.withInclude(name, source);
-        }
+        this._shaderIncludes.forEach((v, k) => builder = builder.withInclude(k, v));
+        this._globalBindBufferLayouts.forEach((layout, i) => builder.withBindGroup(i, layout))
 
         return builder;
     }
@@ -202,7 +203,7 @@ export class TinyHelix {
      * @param label - Optional debug label to assign to the encoder
      */
     createCommandEncoder(label?: string): CommandEncoder {
-        return new CommandEncoder(this.backbufferTarget, this._depthStencilTarget, this._context, label);
+        return new CommandEncoder(this.backbufferTarget, this._globalBindBuffers, this._context, this._depthStencilTarget, label);
     }
 
     /**
@@ -219,6 +220,19 @@ export class TinyHelix {
     createUniformBuffer(layout: UniformBufferLayout): UniformBuffer
     {
         return new UniformBuffer(layout, this._context)
+    }
+
+    /**
+     * Allows setting a global bind group for all render passes. This is useful
+     * for setting bind groups that are used by all passes. These buffers will
+     * automatically be set for all render and compute passes.
+     * @param index - The index of the bind group in the render pipeline layout.
+     * @param buffer - The bind group to set.
+     */
+    setGlobalBindGroup(index: number, layout: BindGroupLayout, buffer: BindGroup): this {
+        this._globalBindBufferLayouts[index] = layout;
+        this._globalBindBuffers[index] = buffer;
+        return this;
     }
 
     /**
