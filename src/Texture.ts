@@ -1,6 +1,7 @@
 import {WebGPUContext} from "./WebGPUContext";
 import {TextureFormat} from "./enums";
 import {IBuffer} from "./buffers/IBuffer";
+import {TextureUsage} from "./buffers/Buffer";
 
 /**
  * Small wrapper around GPUTexture providing convenience constructors and
@@ -20,6 +21,10 @@ export class Texture implements IBuffer {
 
     constructor(inner: GPUTexture) {
         this._inner = inner;
+    }
+
+    createView(): TextureViewBuilder {
+        return new TextureViewBuilder(this);
     }
 
     _getBufferResource(): GPUBindingResource {
@@ -59,7 +64,7 @@ export class TextureBuilder {
         return this;
     }
 
-    withUsage(usage: GPUTextureUsageFlags): this {
+    withUsage(usage: TextureUsage): this {
         this._usage |= usage;
         return this;
     }
@@ -86,6 +91,61 @@ export class TextureBuilder {
             );
         }
         return new Texture(inner);
+    }
+}
+
+export class TextureView
+{
+    /** @internal */
+    _inner: GPUTextureView;
+
+    constructor(inner: GPUTextureView) {
+        this._inner = inner;
+    }
+}
+
+export class TextureViewBuilder {
+    private _texture: Texture;
+    private _desc: GPUTextureViewDescriptor = {};
+
+    /**
+     * @internal
+     */
+    constructor(texture: Texture) {
+        this._texture = texture;
+    }
+
+    withSingleMip(level: number): this
+    {
+        this._desc.baseMipLevel = level;
+        this._desc.mipLevelCount = 1;
+        return this;
+    }
+
+    withMipRange(start: number, end: number): this
+    {
+        this._desc.baseMipLevel = start;
+        this._desc.mipLevelCount = end - start;
+        return this;
+    }
+
+    withSingleLayer(layer: number): this
+    {
+        this._desc.baseArrayLayer = layer;
+        this._desc.arrayLayerCount = 1;
+        return this;
+    }
+
+    withLayerRange(start: number, end: number): this
+    {
+        this._desc.baseArrayLayer = start;
+        this._desc.arrayLayerCount = end;
+        return this;
+    }
+
+    build(): TextureView
+    {
+        return new TextureView(this._texture._inner.createView(this._desc));
     }
 }
 

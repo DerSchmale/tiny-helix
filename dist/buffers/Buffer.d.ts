@@ -17,6 +17,13 @@ export declare enum BufferUsage {
     Indirect,
     QueryResolve
 }
+export declare enum TextureUsage {
+    CopySrc,
+    CopyDst,
+    TextureBinding,
+    StorageBinding,
+    RenderAttachment
+}
 /**
  * Builder for creating GPU-backed buffers.
  *

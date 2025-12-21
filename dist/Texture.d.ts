@@ -2,6 +2,7 @@
 import { WebGPUContext } from "./WebGPUContext";
 import { TextureFormat } from "./enums";
 import { IBuffer } from "./buffers/IBuffer";
+import { TextureUsage } from "./buffers/Buffer";
 /**
  * Small wrapper around GPUTexture providing convenience constructors and
  * an internal accessor for low-level interop.
@@ -15,6 +16,7 @@ export declare class Texture implements IBuffer {
      */
     static from_webgpu(texture: GPUTexture): Texture;
     constructor(inner: GPUTexture);
+    createView(): TextureViewBuilder;
     _getBufferResource(): GPUBindingResource;
 }
 export declare class TextureBuilder {
@@ -28,6 +30,24 @@ export declare class TextureBuilder {
     withData(data: GPUAllowSharedBufferSource): this;
     withFormat(format: TextureFormat): this;
     withImage(data: ImageBitmap): this;
-    withUsage(usage: GPUTextureUsageFlags): this;
+    withUsage(usage: TextureUsage): this;
     build(): Texture;
+}
+export declare class TextureView {
+    /** @internal */
+    _inner: GPUTextureView;
+    constructor(inner: GPUTextureView);
+}
+export declare class TextureViewBuilder {
+    private _texture;
+    private _desc;
+    /**
+     * @internal
+     */
+    constructor(texture: Texture);
+    withSingleMip(level: number): this;
+    withMipRange(start: number, end: number): this;
+    withSingleLayer(layer: number): this;
+    withLayerRange(start: number, end: number): this;
+    build(): TextureView;
 }

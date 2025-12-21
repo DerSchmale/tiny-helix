@@ -2,7 +2,7 @@
 import { WebGPUContext } from "./WebGPUContext";
 import { UniformBuffer, UniformBufferLayout } from "./buffers/UniformBuffer";
 import { IBuffer } from "./buffers/IBuffer";
-import { Texture } from "./Texture";
+import { Texture, TextureView } from "./Texture";
 import { Sampler } from "./Sampler";
 import { TextureFormat } from "../dist";
 import { StorageTextureAccess } from "./enums";
@@ -42,7 +42,7 @@ export declare class BindGroupBuilder {
      */
     withBuffer(fieldName: string, buffer: IBuffer): this;
     /** Attach a texture to the bind group. */
-    withTexture(fieldName: string, texture: Texture): this;
+    withTexture(fieldName: string, texture: Texture | TextureView): this;
     /** Attach a sampler to the bind group at the given binding index. */
     withSampler(fieldName: string, sampler: Sampler): this;
     /**

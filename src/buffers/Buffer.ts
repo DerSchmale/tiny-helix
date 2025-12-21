@@ -20,6 +20,14 @@ export enum BufferUsage {
     QueryResolve = GPUBufferUsage.QUERY_RESOLVE
 }
 
+export enum TextureUsage {
+    CopySrc = GPUTextureUsage.COPY_SRC,
+    CopyDst = GPUTextureUsage.COPY_DST,
+    TextureBinding = GPUTextureUsage.TEXTURE_BINDING,
+    StorageBinding = GPUTextureUsage.STORAGE_BINDING,
+    RenderAttachment = GPUTextureUsage.RENDER_ATTACHMENT
+}
+
 /**
  * Builder for creating GPU-backed buffers.
  *

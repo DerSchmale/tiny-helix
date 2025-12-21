@@ -1493,7 +1493,9 @@ class ShaderBuilder {
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   Texture: () => (/* binding */ Texture),
-/* harmony export */   TextureBuilder: () => (/* binding */ TextureBuilder)
+/* harmony export */   TextureBuilder: () => (/* binding */ TextureBuilder),
+/* harmony export */   TextureView: () => (/* binding */ TextureView),
+/* harmony export */   TextureViewBuilder: () => (/* binding */ TextureViewBuilder)
 /* harmony export */ });
 /* harmony import */ var _enums__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./enums */ "./src/enums.ts");
 
@@ -1511,6 +1513,9 @@ class Texture {
     }
     constructor(inner) {
         this._inner = inner;
+    }
+    createView() {
+        return new TextureViewBuilder(this);
     }
     _getBufferResource() {
         return this._inner.createView();
@@ -1563,6 +1568,43 @@ class TextureBuilder {
             this._ctx.device.queue.writeTexture({ texture: inner }, this._data, { bytesPerRow }, { width, height, depthOrArrayLayers });
         }
         return new Texture(inner);
+    }
+}
+class TextureView {
+    constructor(inner) {
+        this._inner = inner;
+    }
+}
+class TextureViewBuilder {
+    /**
+     * @internal
+     */
+    constructor(texture) {
+        this._desc = {};
+        this._texture = texture;
+    }
+    withSingleMip(level) {
+        this._desc.baseMipLevel = level;
+        this._desc.mipLevelCount = 1;
+        return this;
+    }
+    withMipRange(start, end) {
+        this._desc.baseMipLevel = start;
+        this._desc.mipLevelCount = end - start;
+        return this;
+    }
+    withSingleLayer(layer) {
+        this._desc.baseArrayLayer = layer;
+        this._desc.arrayLayerCount = 1;
+        return this;
+    }
+    withLayerRange(start, end) {
+        this._desc.baseArrayLayer = start;
+        this._desc.arrayLayerCount = end;
+        return this;
+    }
+    build() {
+        return new TextureView(this._texture._inner.createView(this._desc));
     }
 }
 function isBc(format) {
@@ -1984,6 +2026,18 @@ class TinyHelix {
     destroy() {
         this._context.destroy();
     }
+    /**
+     * Returns the current depth/stencil texture if configured.
+     */
+    depthStencilTexture() {
+        return this._depthStencil;
+    }
+    /**
+     * Returns the current depth/stencil RenderTarget if configured.
+     */
+    depthStencilTarget() {
+        return this._depthStencilTarget;
+    }
     _createDepthStencil() {
         this._depthStencil = (0,_utils_mapUndefined__WEBPACK_IMPORTED_MODULE_11__.mapUndefined)(this._options.depthStencilFormat, (f) => this.createTexture()
             .withFormat(f)
@@ -2143,7 +2197,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   Buffer: () => (/* binding */ Buffer),
 /* harmony export */   BufferBuilder: () => (/* binding */ BufferBuilder),
-/* harmony export */   BufferUsage: () => (/* binding */ BufferUsage)
+/* harmony export */   BufferUsage: () => (/* binding */ BufferUsage),
+/* harmony export */   TextureUsage: () => (/* binding */ TextureUsage)
 /* harmony export */ });
 /* harmony import */ var _utils_mapUndefined__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../utils/mapUndefined */ "./src/utils/mapUndefined.ts");
 /* harmony import */ var _utils_padArrayBuffer__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../utils/padArrayBuffer */ "./src/utils/padArrayBuffer.ts");
@@ -2166,6 +2221,14 @@ var BufferUsage;
     BufferUsage[BufferUsage["Indirect"] = GPUBufferUsage.INDIRECT] = "Indirect";
     BufferUsage[BufferUsage["QueryResolve"] = GPUBufferUsage.QUERY_RESOLVE] = "QueryResolve";
 })(BufferUsage || (BufferUsage = {}));
+var TextureUsage;
+(function (TextureUsage) {
+    TextureUsage[TextureUsage["CopySrc"] = GPUTextureUsage.COPY_SRC] = "CopySrc";
+    TextureUsage[TextureUsage["CopyDst"] = GPUTextureUsage.COPY_DST] = "CopyDst";
+    TextureUsage[TextureUsage["TextureBinding"] = GPUTextureUsage.TEXTURE_BINDING] = "TextureBinding";
+    TextureUsage[TextureUsage["StorageBinding"] = GPUTextureUsage.STORAGE_BINDING] = "StorageBinding";
+    TextureUsage[TextureUsage["RenderAttachment"] = GPUTextureUsage.RENDER_ATTACHMENT] = "RenderAttachment";
+})(TextureUsage || (TextureUsage = {}));
 /**
  * Builder for creating GPU-backed buffers.
  *
@@ -3137,6 +3200,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   Texture: () => (/* reexport safe */ _Texture__WEBPACK_IMPORTED_MODULE_14__.Texture),
 /* harmony export */   TextureBuilder: () => (/* reexport safe */ _Texture__WEBPACK_IMPORTED_MODULE_14__.TextureBuilder),
 /* harmony export */   TextureFormat: () => (/* reexport safe */ _enums__WEBPACK_IMPORTED_MODULE_7__.TextureFormat),
+/* harmony export */   TextureUsage: () => (/* reexport safe */ _buffers_Buffer__WEBPACK_IMPORTED_MODULE_15__.TextureUsage),
+/* harmony export */   TextureView: () => (/* reexport safe */ _Texture__WEBPACK_IMPORTED_MODULE_14__.TextureView),
+/* harmony export */   TextureViewBuilder: () => (/* reexport safe */ _Texture__WEBPACK_IMPORTED_MODULE_14__.TextureViewBuilder),
 /* harmony export */   TinyHelix: () => (/* reexport safe */ _TinyHelix__WEBPACK_IMPORTED_MODULE_0__.TinyHelix),
 /* harmony export */   UniformBuffer: () => (/* reexport safe */ _buffers_UniformBuffer__WEBPACK_IMPORTED_MODULE_16__.UniformBuffer),
 /* harmony export */   UniformBufferLayout: () => (/* reexport safe */ _buffers_UniformBuffer__WEBPACK_IMPORTED_MODULE_16__.UniformBufferLayout),
@@ -3231,6 +3297,9 @@ const __webpack_exports__StreamBuilder = __webpack_exports__.StreamBuilder;
 const __webpack_exports__Texture = __webpack_exports__.Texture;
 const __webpack_exports__TextureBuilder = __webpack_exports__.TextureBuilder;
 const __webpack_exports__TextureFormat = __webpack_exports__.TextureFormat;
+const __webpack_exports__TextureUsage = __webpack_exports__.TextureUsage;
+const __webpack_exports__TextureView = __webpack_exports__.TextureView;
+const __webpack_exports__TextureViewBuilder = __webpack_exports__.TextureViewBuilder;
 const __webpack_exports__TinyHelix = __webpack_exports__.TinyHelix;
 const __webpack_exports__UniformBuffer = __webpack_exports__.UniformBuffer;
 const __webpack_exports__UniformBufferLayout = __webpack_exports__.UniformBufferLayout;
@@ -3238,6 +3307,6 @@ const __webpack_exports__UniformBufferLayoutBuilder = __webpack_exports__.Unifor
 const __webpack_exports__VertexFormat = __webpack_exports__.VertexFormat;
 const __webpack_exports__WebGPUContext = __webpack_exports__.WebGPUContext;
 const __webpack_exports__default = __webpack_exports__["default"];
-export { __webpack_exports__AddressMode as AddressMode, __webpack_exports__BaseType as BaseType, __webpack_exports__BindGroup as BindGroup, __webpack_exports__BindGroupBuilder as BindGroupBuilder, __webpack_exports__BindGroupLayout as BindGroupLayout, __webpack_exports__BlendFactor as BlendFactor, __webpack_exports__BlendMode as BlendMode, __webpack_exports__Buffer as Buffer, __webpack_exports__BufferBuilder as BufferBuilder, __webpack_exports__BufferDataWriter as BufferDataWriter, __webpack_exports__BufferUsage as BufferUsage, __webpack_exports__CommandEncoder as CommandEncoder, __webpack_exports__CompareFunction as CompareFunction, __webpack_exports__ComputePass as ComputePass, __webpack_exports__ComputePassBuilder as ComputePassBuilder, __webpack_exports__ComputePipeline as ComputePipeline, __webpack_exports__ComputePipelineBuilder as ComputePipelineBuilder, __webpack_exports__CullMode as CullMode, __webpack_exports__Enums as Enums, __webpack_exports__FilterMode as FilterMode, __webpack_exports__FrontFace as FrontFace, __webpack_exports__IndexFormat as IndexFormat, __webpack_exports__Mesh as Mesh, __webpack_exports__MeshBuilder as MeshBuilder, __webpack_exports__MeshTopology as MeshTopology, __webpack_exports__RenderPass as RenderPass, __webpack_exports__RenderPassBuilder as RenderPassBuilder, __webpack_exports__RenderPipeline as RenderPipeline, __webpack_exports__RenderPipelineBuilder as RenderPipelineBuilder, __webpack_exports__RenderTarget as RenderTarget, __webpack_exports__RenderTargetBuilder as RenderTargetBuilder, __webpack_exports__Sampler as Sampler, __webpack_exports__SamplerBuilder as SamplerBuilder, __webpack_exports__Shader as Shader, __webpack_exports__ShaderBuilder as ShaderBuilder, __webpack_exports__StorageTextureAccess as StorageTextureAccess, __webpack_exports__StreamBuilder as StreamBuilder, __webpack_exports__Texture as Texture, __webpack_exports__TextureBuilder as TextureBuilder, __webpack_exports__TextureFormat as TextureFormat, __webpack_exports__TinyHelix as TinyHelix, __webpack_exports__UniformBuffer as UniformBuffer, __webpack_exports__UniformBufferLayout as UniformBufferLayout, __webpack_exports__UniformBufferLayoutBuilder as UniformBufferLayoutBuilder, __webpack_exports__VertexFormat as VertexFormat, __webpack_exports__WebGPUContext as WebGPUContext, __webpack_exports__default as default };
+export { __webpack_exports__AddressMode as AddressMode, __webpack_exports__BaseType as BaseType, __webpack_exports__BindGroup as BindGroup, __webpack_exports__BindGroupBuilder as BindGroupBuilder, __webpack_exports__BindGroupLayout as BindGroupLayout, __webpack_exports__BlendFactor as BlendFactor, __webpack_exports__BlendMode as BlendMode, __webpack_exports__Buffer as Buffer, __webpack_exports__BufferBuilder as BufferBuilder, __webpack_exports__BufferDataWriter as BufferDataWriter, __webpack_exports__BufferUsage as BufferUsage, __webpack_exports__CommandEncoder as CommandEncoder, __webpack_exports__CompareFunction as CompareFunction, __webpack_exports__ComputePass as ComputePass, __webpack_exports__ComputePassBuilder as ComputePassBuilder, __webpack_exports__ComputePipeline as ComputePipeline, __webpack_exports__ComputePipelineBuilder as ComputePipelineBuilder, __webpack_exports__CullMode as CullMode, __webpack_exports__Enums as Enums, __webpack_exports__FilterMode as FilterMode, __webpack_exports__FrontFace as FrontFace, __webpack_exports__IndexFormat as IndexFormat, __webpack_exports__Mesh as Mesh, __webpack_exports__MeshBuilder as MeshBuilder, __webpack_exports__MeshTopology as MeshTopology, __webpack_exports__RenderPass as RenderPass, __webpack_exports__RenderPassBuilder as RenderPassBuilder, __webpack_exports__RenderPipeline as RenderPipeline, __webpack_exports__RenderPipelineBuilder as RenderPipelineBuilder, __webpack_exports__RenderTarget as RenderTarget, __webpack_exports__RenderTargetBuilder as RenderTargetBuilder, __webpack_exports__Sampler as Sampler, __webpack_exports__SamplerBuilder as SamplerBuilder, __webpack_exports__Shader as Shader, __webpack_exports__ShaderBuilder as ShaderBuilder, __webpack_exports__StorageTextureAccess as StorageTextureAccess, __webpack_exports__StreamBuilder as StreamBuilder, __webpack_exports__Texture as Texture, __webpack_exports__TextureBuilder as TextureBuilder, __webpack_exports__TextureFormat as TextureFormat, __webpack_exports__TextureUsage as TextureUsage, __webpack_exports__TextureView as TextureView, __webpack_exports__TextureViewBuilder as TextureViewBuilder, __webpack_exports__TinyHelix as TinyHelix, __webpack_exports__UniformBuffer as UniformBuffer, __webpack_exports__UniformBufferLayout as UniformBufferLayout, __webpack_exports__UniformBufferLayoutBuilder as UniformBufferLayoutBuilder, __webpack_exports__VertexFormat as VertexFormat, __webpack_exports__WebGPUContext as WebGPUContext, __webpack_exports__default as default };
 
 //# sourceMappingURL=tiny-helix.esm.debug.js.map

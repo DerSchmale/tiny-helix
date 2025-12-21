@@ -242,6 +242,20 @@ export class TinyHelix {
         this._context.destroy();
     }
 
+    /**
+     * Returns the current depth/stencil texture if configured.
+     */
+    depthStencilTexture(): Texture | undefined {
+        return this._depthStencil;
+    }
+
+    /**
+     * Returns the current depth/stencil RenderTarget if configured.
+     */
+    depthStencilTarget(): RenderTarget | undefined {
+        return this._depthStencilTarget;
+    }
+
     private _createDepthStencil() {
         this._depthStencil = mapUndefined(this._options.depthStencilFormat, (f) =>
             this.createTexture()

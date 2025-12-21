@@ -2,7 +2,7 @@ import {WebGPUContext} from "./WebGPUContext";
 import {UniformBuffer, UniformBufferLayout} from "./buffers/UniformBuffer";
 import {IBuffer} from "./buffers/IBuffer";
 import {mapUndefined} from "./utils/mapUndefined";
-import {Texture} from "./Texture";
+import {Texture, TextureView} from "./Texture";
 import {Sampler} from "./Sampler";
 import {TextureFormat} from "../dist";
 import {StorageTextureAccess} from "./enums";
@@ -63,7 +63,7 @@ export class BindGroupBuilder {
     }
 
     /** Attach a texture to the bind group. */
-    withTexture(fieldName: string, texture: Texture): this {
+    withTexture(fieldName: string, texture: Texture | TextureView): this {
         const index = this._layout._getBindingIndex(fieldName);
         this._entries[index] = {
             binding: index, resource: texture._inner

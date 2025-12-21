@@ -136,5 +136,13 @@ export declare class TinyHelix {
      * Destroy the TinyHelix instance and release all GPU resources.
      */
     destroy(): void;
+    /**
+     * Returns the current depth/stencil texture if configured.
+     */
+    depthStencilTexture(): Texture | undefined;
+    /**
+     * Returns the current depth/stencil RenderTarget if configured.
+     */
+    depthStencilTarget(): RenderTarget | undefined;
     private _createDepthStencil;
 }

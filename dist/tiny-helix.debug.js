@@ -1505,7 +1505,9 @@ class ShaderBuilder {
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   Texture: () => (/* binding */ Texture),
-/* harmony export */   TextureBuilder: () => (/* binding */ TextureBuilder)
+/* harmony export */   TextureBuilder: () => (/* binding */ TextureBuilder),
+/* harmony export */   TextureView: () => (/* binding */ TextureView),
+/* harmony export */   TextureViewBuilder: () => (/* binding */ TextureViewBuilder)
 /* harmony export */ });
 /* harmony import */ var _enums__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./enums */ "./src/enums.ts");
 
@@ -1523,6 +1525,9 @@ class Texture {
     }
     constructor(inner) {
         this._inner = inner;
+    }
+    createView() {
+        return new TextureViewBuilder(this);
     }
     _getBufferResource() {
         return this._inner.createView();
@@ -1575,6 +1580,43 @@ class TextureBuilder {
             this._ctx.device.queue.writeTexture({ texture: inner }, this._data, { bytesPerRow }, { width, height, depthOrArrayLayers });
         }
         return new Texture(inner);
+    }
+}
+class TextureView {
+    constructor(inner) {
+        this._inner = inner;
+    }
+}
+class TextureViewBuilder {
+    /**
+     * @internal
+     */
+    constructor(texture) {
+        this._desc = {};
+        this._texture = texture;
+    }
+    withSingleMip(level) {
+        this._desc.baseMipLevel = level;
+        this._desc.mipLevelCount = 1;
+        return this;
+    }
+    withMipRange(start, end) {
+        this._desc.baseMipLevel = start;
+        this._desc.mipLevelCount = end - start;
+        return this;
+    }
+    withSingleLayer(layer) {
+        this._desc.baseArrayLayer = layer;
+        this._desc.arrayLayerCount = 1;
+        return this;
+    }
+    withLayerRange(start, end) {
+        this._desc.baseArrayLayer = start;
+        this._desc.arrayLayerCount = end;
+        return this;
+    }
+    build() {
+        return new TextureView(this._texture._inner.createView(this._desc));
     }
 }
 function isBc(format) {
@@ -1996,6 +2038,18 @@ class TinyHelix {
     destroy() {
         this._context.destroy();
     }
+    /**
+     * Returns the current depth/stencil texture if configured.
+     */
+    depthStencilTexture() {
+        return this._depthStencil;
+    }
+    /**
+     * Returns the current depth/stencil RenderTarget if configured.
+     */
+    depthStencilTarget() {
+        return this._depthStencilTarget;
+    }
     _createDepthStencil() {
         this._depthStencil = (0,_utils_mapUndefined__WEBPACK_IMPORTED_MODULE_11__.mapUndefined)(this._options.depthStencilFormat, (f) => this.createTexture()
             .withFormat(f)
@@ -2155,7 +2209,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   Buffer: () => (/* binding */ Buffer),
 /* harmony export */   BufferBuilder: () => (/* binding */ BufferBuilder),
-/* harmony export */   BufferUsage: () => (/* binding */ BufferUsage)
+/* harmony export */   BufferUsage: () => (/* binding */ BufferUsage),
+/* harmony export */   TextureUsage: () => (/* binding */ TextureUsage)
 /* harmony export */ });
 /* harmony import */ var _utils_mapUndefined__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../utils/mapUndefined */ "./src/utils/mapUndefined.ts");
 /* harmony import */ var _utils_padArrayBuffer__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../utils/padArrayBuffer */ "./src/utils/padArrayBuffer.ts");
@@ -2178,6 +2233,14 @@ var BufferUsage;
     BufferUsage[BufferUsage["Indirect"] = GPUBufferUsage.INDIRECT] = "Indirect";
     BufferUsage[BufferUsage["QueryResolve"] = GPUBufferUsage.QUERY_RESOLVE] = "QueryResolve";
 })(BufferUsage || (BufferUsage = {}));
+var TextureUsage;
+(function (TextureUsage) {
+    TextureUsage[TextureUsage["CopySrc"] = GPUTextureUsage.COPY_SRC] = "CopySrc";
+    TextureUsage[TextureUsage["CopyDst"] = GPUTextureUsage.COPY_DST] = "CopyDst";
+    TextureUsage[TextureUsage["TextureBinding"] = GPUTextureUsage.TEXTURE_BINDING] = "TextureBinding";
+    TextureUsage[TextureUsage["StorageBinding"] = GPUTextureUsage.STORAGE_BINDING] = "StorageBinding";
+    TextureUsage[TextureUsage["RenderAttachment"] = GPUTextureUsage.RENDER_ATTACHMENT] = "RenderAttachment";
+})(TextureUsage || (TextureUsage = {}));
 /**
  * Builder for creating GPU-backed buffers.
  *
@@ -3149,6 +3212,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   Texture: () => (/* reexport safe */ _Texture__WEBPACK_IMPORTED_MODULE_14__.Texture),
 /* harmony export */   TextureBuilder: () => (/* reexport safe */ _Texture__WEBPACK_IMPORTED_MODULE_14__.TextureBuilder),
 /* harmony export */   TextureFormat: () => (/* reexport safe */ _enums__WEBPACK_IMPORTED_MODULE_7__.TextureFormat),
+/* harmony export */   TextureUsage: () => (/* reexport safe */ _buffers_Buffer__WEBPACK_IMPORTED_MODULE_15__.TextureUsage),
+/* harmony export */   TextureView: () => (/* reexport safe */ _Texture__WEBPACK_IMPORTED_MODULE_14__.TextureView),
+/* harmony export */   TextureViewBuilder: () => (/* reexport safe */ _Texture__WEBPACK_IMPORTED_MODULE_14__.TextureViewBuilder),
 /* harmony export */   TinyHelix: () => (/* reexport safe */ _TinyHelix__WEBPACK_IMPORTED_MODULE_0__.TinyHelix),
 /* harmony export */   UniformBuffer: () => (/* reexport safe */ _buffers_UniformBuffer__WEBPACK_IMPORTED_MODULE_16__.UniformBuffer),
 /* harmony export */   UniformBufferLayout: () => (/* reexport safe */ _buffers_UniformBuffer__WEBPACK_IMPORTED_MODULE_16__.UniformBufferLayout),
