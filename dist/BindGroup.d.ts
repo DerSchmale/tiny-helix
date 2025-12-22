@@ -5,7 +5,7 @@ import { IBuffer } from "./buffers/IBuffer";
 import { Texture, TextureView } from "./Texture";
 import { Sampler } from "./Sampler";
 import { TextureFormat } from "../dist";
-import { StorageAccess } from "./enums";
+import { SamplerType, StorageAccess, TextureSampleType } from "./enums";
 /**
  * Lightweight wrapper around a GPUBindGroup.
  * Use {@link TinyHelix.createBindGroup} to create instances.
@@ -96,23 +96,23 @@ declare class BindGroupLayoutBuilder {
     /**
      * Add a storage buffer binding at the given index and record its layout.
      * @param index - binding index
-     * @param field_name - a name used to reference the layout later
-     * @param access_mode - Defines whether the storage buffer is read-only or not.
+     * @param fieldName - a name used to reference the layout later
+     * @param accessMode - Defines whether the storage buffer is read-only or not.
      * @param visibility - shader stage visibility flags (defaults to FRAGMENT|COMPUTE)
      */
-    withStorageBuffer(index: number, field_name: string, access_mode: StorageAccess, visibility?: GPUShaderStageFlags): this;
+    withStorageBuffer(index: number, fieldName: string, accessMode: StorageAccess, visibility?: GPUShaderStageFlags): this;
     /**
      * Add a storage texture binding at the given index. The texture will be
      * write-only and use RGBA8Unorm format.
      * @param index
-     * @param field_name
+     * @param fieldName
      * @param format
-     * @param access_mode
+     * @param accessMode
      * @param visibility
      */
-    withStorageTexture(index: number, field_name: string, format: TextureFormat, access_mode: StorageAccess, visibility?: GPUShaderStageFlags): this;
-    withTexture(index: number, field_name: string, visibility?: GPUShaderStageFlags): this;
-    withSampler(index: number, field_name: string, visibility?: GPUShaderStageFlags): this;
+    withStorageTexture(index: number, fieldName: string, format: TextureFormat, accessMode: StorageAccess, visibility?: GPUShaderStageFlags): this;
+    withTexture(index: number, fieldName: string, sampleType?: TextureSampleType, visibility?: GPUShaderStageFlags): this;
+    withSampler(index: number, fieldName: string, samplerType?: SamplerType, visibility?: GPUShaderStageFlags): this;
     /**
      * Create the underlying GPUBindGroupLayout and return a wrapped `BindGroupLayout`.
      */

@@ -161,13 +161,13 @@ class BindGroupLayoutBuilder {
     /**
      * Add a storage buffer binding at the given index and record its layout.
      * @param index - binding index
-     * @param field_name - a name used to reference the layout later
-     * @param access_mode - Defines whether the storage buffer is read-only or not.
+     * @param fieldName - a name used to reference the layout later
+     * @param accessMode - Defines whether the storage buffer is read-only or not.
      * @param visibility - shader stage visibility flags (defaults to FRAGMENT|COMPUTE)
      */
-    withStorageBuffer(index, field_name, access_mode, visibility) {
+    withStorageBuffer(index, fieldName, accessMode, visibility) {
         let type = "storage";
-        if (access_mode === _enums__WEBPACK_IMPORTED_MODULE_2__.StorageAccess.Read) {
+        if (accessMode === _enums__WEBPACK_IMPORTED_MODULE_2__.StorageAccess.Read) {
             type = "read-only-storage";
         }
         this._entries[index] = {
@@ -175,43 +175,43 @@ class BindGroupLayoutBuilder {
             visibility: visibility ?? GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE,
             buffer: { type, hasDynamicOffset: false, minBindingSize: 4 }
         };
-        this._indices.set(field_name, index);
+        this._indices.set(fieldName, index);
         return this;
     }
     /**
      * Add a storage texture binding at the given index. The texture will be
      * write-only and use RGBA8Unorm format.
      * @param index
-     * @param field_name
+     * @param fieldName
      * @param format
-     * @param access_mode
+     * @param accessMode
      * @param visibility
      */
-    withStorageTexture(index, field_name, format, access_mode, visibility) {
+    withStorageTexture(index, fieldName, format, accessMode, visibility) {
         this._entries[index] = {
             binding: index,
             visibility: visibility ?? GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE,
-            storageTexture: { access: access_mode, format }
+            storageTexture: { access: accessMode, format }
         };
-        this._indices.set(field_name, index);
+        this._indices.set(fieldName, index);
         return this;
     }
-    withTexture(index, field_name, visibility) {
+    withTexture(index, fieldName, sampleType = _enums__WEBPACK_IMPORTED_MODULE_2__.TextureSampleType.Float, visibility) {
         this._entries[index] = {
             binding: index,
             visibility: visibility ?? GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE,
-            texture: { sampleType: 'float' }
+            texture: { sampleType }
         };
-        this._indices.set(field_name, index);
+        this._indices.set(fieldName, index);
         return this;
     }
-    withSampler(index, field_name, visibility) {
+    withSampler(index, fieldName, samplerType = _enums__WEBPACK_IMPORTED_MODULE_2__.SamplerType.Filtering, visibility) {
         this._entries[index] = {
             binding: index,
             visibility: visibility ?? GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE,
-            sampler: { type: 'filtering' }
+            sampler: { type: samplerType }
         };
-        this._indices.set(field_name, index);
+        this._indices.set(fieldName, index);
         return this;
     }
     /**
@@ -2213,10 +2213,9 @@ class WebGPUContext {
         // Configure canvas context if provided
         if (options.canvas) {
             this._canvas = options.canvas;
-            this._context = this._canvas.getContext('webgpu');
-            console.log(this._context);
+            this._context = this._canvas.getContext("webgpu");
             if (!this._context) {
-                throw new Error('Failed to get WebGPU context from canvas');
+                throw new Error("Failed to get WebGPU context from canvas");
             }
             const canUseP3 = window.matchMedia("(color-gamut: p3)").matches;
             this._colorSpace = options.colorSpace ?? _enums__WEBPACK_IMPORTED_MODULE_0__.ColorSpace.sRGB;
@@ -2229,7 +2228,7 @@ class WebGPUContext {
                 device: this._device,
                 format: this._format,
                 colorSpace: this._colorSpace,
-                alphaMode: 'premultiplied',
+                alphaMode: "premultiplied",
             });
         }
         else {
@@ -2901,8 +2900,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   CompareFunction: () => (/* binding */ CompareFunction),
 /* harmony export */   CullMode: () => (/* binding */ CullMode),
 /* harmony export */   FilterMode: () => (/* binding */ FilterMode),
+/* harmony export */   SamplerType: () => (/* binding */ SamplerType),
 /* harmony export */   StorageAccess: () => (/* binding */ StorageAccess),
-/* harmony export */   TextureFormat: () => (/* binding */ TextureFormat)
+/* harmony export */   TextureFormat: () => (/* binding */ TextureFormat),
+/* harmony export */   TextureSampleType: () => (/* binding */ TextureSampleType)
 /* harmony export */ });
 var ColorSpace;
 (function (ColorSpace) {
@@ -3070,6 +3071,20 @@ var StorageAccess;
     StorageAccess["Read"] = "read-only";
     StorageAccess["Write"] = "write-only";
 })(StorageAccess || (StorageAccess = {}));
+var TextureSampleType;
+(function (TextureSampleType) {
+    TextureSampleType["Float"] = "float";
+    TextureSampleType["Sint"] = "sint";
+    TextureSampleType["Uint"] = "uint";
+    TextureSampleType["UnfilterableFloat"] = "unfilterable-float";
+    TextureSampleType["Depth"] = "depth";
+})(TextureSampleType || (TextureSampleType = {}));
+var SamplerType;
+(function (SamplerType) {
+    SamplerType["Filtering"] = "filtering";
+    SamplerType["NonFiltering"] = "non-filtering";
+    SamplerType["Comparison"] = "comparison";
+})(SamplerType || (SamplerType = {}));
 
 
 /***/ }),
@@ -3268,6 +3283,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   RenderTargetBuilder: () => (/* reexport safe */ _RenderTarget__WEBPACK_IMPORTED_MODULE_11__.RenderTargetBuilder),
 /* harmony export */   Sampler: () => (/* reexport safe */ _Sampler__WEBPACK_IMPORTED_MODULE_12__.Sampler),
 /* harmony export */   SamplerBuilder: () => (/* reexport safe */ _Sampler__WEBPACK_IMPORTED_MODULE_12__.SamplerBuilder),
+/* harmony export */   SamplerType: () => (/* reexport safe */ _enums__WEBPACK_IMPORTED_MODULE_7__.SamplerType),
 /* harmony export */   Shader: () => (/* reexport safe */ _Shader__WEBPACK_IMPORTED_MODULE_13__.Shader),
 /* harmony export */   ShaderBuilder: () => (/* reexport safe */ _Shader__WEBPACK_IMPORTED_MODULE_13__.ShaderBuilder),
 /* harmony export */   StorageAccess: () => (/* reexport safe */ _enums__WEBPACK_IMPORTED_MODULE_7__.StorageAccess),
@@ -3275,6 +3291,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   Texture: () => (/* reexport safe */ _Texture__WEBPACK_IMPORTED_MODULE_14__.Texture),
 /* harmony export */   TextureBuilder: () => (/* reexport safe */ _Texture__WEBPACK_IMPORTED_MODULE_14__.TextureBuilder),
 /* harmony export */   TextureFormat: () => (/* reexport safe */ _enums__WEBPACK_IMPORTED_MODULE_7__.TextureFormat),
+/* harmony export */   TextureSampleType: () => (/* reexport safe */ _enums__WEBPACK_IMPORTED_MODULE_7__.TextureSampleType),
 /* harmony export */   TextureUsage: () => (/* reexport safe */ _buffers_Buffer__WEBPACK_IMPORTED_MODULE_15__.TextureUsage),
 /* harmony export */   TextureView: () => (/* reexport safe */ _Texture__WEBPACK_IMPORTED_MODULE_14__.TextureView),
 /* harmony export */   TextureViewBuilder: () => (/* reexport safe */ _Texture__WEBPACK_IMPORTED_MODULE_14__.TextureViewBuilder),
@@ -3365,6 +3382,7 @@ const __webpack_exports__RenderTarget = __webpack_exports__.RenderTarget;
 const __webpack_exports__RenderTargetBuilder = __webpack_exports__.RenderTargetBuilder;
 const __webpack_exports__Sampler = __webpack_exports__.Sampler;
 const __webpack_exports__SamplerBuilder = __webpack_exports__.SamplerBuilder;
+const __webpack_exports__SamplerType = __webpack_exports__.SamplerType;
 const __webpack_exports__Shader = __webpack_exports__.Shader;
 const __webpack_exports__ShaderBuilder = __webpack_exports__.ShaderBuilder;
 const __webpack_exports__StorageAccess = __webpack_exports__.StorageAccess;
@@ -3372,6 +3390,7 @@ const __webpack_exports__StreamBuilder = __webpack_exports__.StreamBuilder;
 const __webpack_exports__Texture = __webpack_exports__.Texture;
 const __webpack_exports__TextureBuilder = __webpack_exports__.TextureBuilder;
 const __webpack_exports__TextureFormat = __webpack_exports__.TextureFormat;
+const __webpack_exports__TextureSampleType = __webpack_exports__.TextureSampleType;
 const __webpack_exports__TextureUsage = __webpack_exports__.TextureUsage;
 const __webpack_exports__TextureView = __webpack_exports__.TextureView;
 const __webpack_exports__TextureViewBuilder = __webpack_exports__.TextureViewBuilder;
@@ -3382,6 +3401,6 @@ const __webpack_exports__UniformBufferLayoutBuilder = __webpack_exports__.Unifor
 const __webpack_exports__VertexFormat = __webpack_exports__.VertexFormat;
 const __webpack_exports__WebGPUContext = __webpack_exports__.WebGPUContext;
 const __webpack_exports__default = __webpack_exports__["default"];
-export { __webpack_exports__AddressMode as AddressMode, __webpack_exports__BaseType as BaseType, __webpack_exports__BindGroup as BindGroup, __webpack_exports__BindGroupBuilder as BindGroupBuilder, __webpack_exports__BindGroupLayout as BindGroupLayout, __webpack_exports__BlendFactor as BlendFactor, __webpack_exports__BlendMode as BlendMode, __webpack_exports__Buffer as Buffer, __webpack_exports__BufferBuilder as BufferBuilder, __webpack_exports__BufferDataWriter as BufferDataWriter, __webpack_exports__BufferUsage as BufferUsage, __webpack_exports__ColorSpace as ColorSpace, __webpack_exports__CommandEncoder as CommandEncoder, __webpack_exports__CompareFunction as CompareFunction, __webpack_exports__ComputePass as ComputePass, __webpack_exports__ComputePassBuilder as ComputePassBuilder, __webpack_exports__ComputePipeline as ComputePipeline, __webpack_exports__ComputePipelineBuilder as ComputePipelineBuilder, __webpack_exports__CullMode as CullMode, __webpack_exports__FilterMode as FilterMode, __webpack_exports__FrontFace as FrontFace, __webpack_exports__IndexFormat as IndexFormat, __webpack_exports__Mesh as Mesh, __webpack_exports__MeshBuilder as MeshBuilder, __webpack_exports__MeshTopology as MeshTopology, __webpack_exports__RenderPass as RenderPass, __webpack_exports__RenderPassBuilder as RenderPassBuilder, __webpack_exports__RenderPipeline as RenderPipeline, __webpack_exports__RenderPipelineBuilder as RenderPipelineBuilder, __webpack_exports__RenderTarget as RenderTarget, __webpack_exports__RenderTargetBuilder as RenderTargetBuilder, __webpack_exports__Sampler as Sampler, __webpack_exports__SamplerBuilder as SamplerBuilder, __webpack_exports__Shader as Shader, __webpack_exports__ShaderBuilder as ShaderBuilder, __webpack_exports__StorageAccess as StorageAccess, __webpack_exports__StreamBuilder as StreamBuilder, __webpack_exports__Texture as Texture, __webpack_exports__TextureBuilder as TextureBuilder, __webpack_exports__TextureFormat as TextureFormat, __webpack_exports__TextureUsage as TextureUsage, __webpack_exports__TextureView as TextureView, __webpack_exports__TextureViewBuilder as TextureViewBuilder, __webpack_exports__TinyHelix as TinyHelix, __webpack_exports__UniformBuffer as UniformBuffer, __webpack_exports__UniformBufferLayout as UniformBufferLayout, __webpack_exports__UniformBufferLayoutBuilder as UniformBufferLayoutBuilder, __webpack_exports__VertexFormat as VertexFormat, __webpack_exports__WebGPUContext as WebGPUContext, __webpack_exports__default as default };
+export { __webpack_exports__AddressMode as AddressMode, __webpack_exports__BaseType as BaseType, __webpack_exports__BindGroup as BindGroup, __webpack_exports__BindGroupBuilder as BindGroupBuilder, __webpack_exports__BindGroupLayout as BindGroupLayout, __webpack_exports__BlendFactor as BlendFactor, __webpack_exports__BlendMode as BlendMode, __webpack_exports__Buffer as Buffer, __webpack_exports__BufferBuilder as BufferBuilder, __webpack_exports__BufferDataWriter as BufferDataWriter, __webpack_exports__BufferUsage as BufferUsage, __webpack_exports__ColorSpace as ColorSpace, __webpack_exports__CommandEncoder as CommandEncoder, __webpack_exports__CompareFunction as CompareFunction, __webpack_exports__ComputePass as ComputePass, __webpack_exports__ComputePassBuilder as ComputePassBuilder, __webpack_exports__ComputePipeline as ComputePipeline, __webpack_exports__ComputePipelineBuilder as ComputePipelineBuilder, __webpack_exports__CullMode as CullMode, __webpack_exports__FilterMode as FilterMode, __webpack_exports__FrontFace as FrontFace, __webpack_exports__IndexFormat as IndexFormat, __webpack_exports__Mesh as Mesh, __webpack_exports__MeshBuilder as MeshBuilder, __webpack_exports__MeshTopology as MeshTopology, __webpack_exports__RenderPass as RenderPass, __webpack_exports__RenderPassBuilder as RenderPassBuilder, __webpack_exports__RenderPipeline as RenderPipeline, __webpack_exports__RenderPipelineBuilder as RenderPipelineBuilder, __webpack_exports__RenderTarget as RenderTarget, __webpack_exports__RenderTargetBuilder as RenderTargetBuilder, __webpack_exports__Sampler as Sampler, __webpack_exports__SamplerBuilder as SamplerBuilder, __webpack_exports__SamplerType as SamplerType, __webpack_exports__Shader as Shader, __webpack_exports__ShaderBuilder as ShaderBuilder, __webpack_exports__StorageAccess as StorageAccess, __webpack_exports__StreamBuilder as StreamBuilder, __webpack_exports__Texture as Texture, __webpack_exports__TextureBuilder as TextureBuilder, __webpack_exports__TextureFormat as TextureFormat, __webpack_exports__TextureSampleType as TextureSampleType, __webpack_exports__TextureUsage as TextureUsage, __webpack_exports__TextureView as TextureView, __webpack_exports__TextureViewBuilder as TextureViewBuilder, __webpack_exports__TinyHelix as TinyHelix, __webpack_exports__UniformBuffer as UniformBuffer, __webpack_exports__UniformBufferLayout as UniformBufferLayout, __webpack_exports__UniformBufferLayoutBuilder as UniformBufferLayoutBuilder, __webpack_exports__VertexFormat as VertexFormat, __webpack_exports__WebGPUContext as WebGPUContext, __webpack_exports__default as default };
 
 //# sourceMappingURL=tiny-helix.esm.debug.js.map

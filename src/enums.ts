@@ -163,3 +163,17 @@ export enum StorageAccess {
     Read = "read-only",
     Write = "write-only"
 }
+
+export enum TextureSampleType {
+    Float = "float",
+    Sint = "sint",
+    Uint = "uint",
+    UnfilterableFloat = "unfilterable-float",
+    Depth = "depth",
+}
+
+export enum SamplerType {
+    Filtering = "filtering",
+    NonFiltering = "non-filtering",
+    Comparison = "comparison",
+}

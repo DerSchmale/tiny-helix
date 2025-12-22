@@ -1,6 +1,6 @@
 {
-  "name": "tiny-helix",
-  "version": "1.0.0",
+  "name": "@derschmale/tiny-helix",
+  "version": "0.1.0",
   "description": "A TypeScript library for WebGPU",
   "main": "dist/tiny-helix.js",
   "module": "dist/tiny-helix.esm.js",
