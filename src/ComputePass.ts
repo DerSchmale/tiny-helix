@@ -4,7 +4,7 @@ import {Buffer} from "./buffers/Buffer";
 
 export class ComputePass
 {
-    private _inner: GPUComputePassEncoder;
+    private readonly _inner: GPUComputePassEncoder;
 
     constructor(inner: GPUComputePassEncoder) {
         this._inner = inner;

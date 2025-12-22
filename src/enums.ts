@@ -1,12 +1,6 @@
-export enum Enums {
-    Never = "never",
-    Less = "less",
-    Equal = "equal",
-    LessEqual = "less-equal",
-    Greater = "greater",
-    NotEqual = "not-equal",
-    GreaterEqual = "greater-equal",
-    Always = "always"
+export enum ColorSpace {
+    sRGB = 'srgb',
+    DisplayP3 = 'display-p3'
 }
 
 export enum FilterMode {
@@ -164,7 +158,7 @@ export enum CompareFunction {
     Always = "always"
 }
 
-export enum StorageTextureAccess {
+export enum StorageAccess {
     ReadWrite = "read-write",
     Read = "read-only",
     Write = "write-only"

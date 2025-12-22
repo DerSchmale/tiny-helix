@@ -9,8 +9,9 @@ import {UniformBuffer, UniformBufferLayout, UniformBufferLayoutBuilder} from "./
 import BindGroupLayoutBuilder, {BindGroup, BindGroupBuilder, BindGroupLayout} from "./BindGroup";
 import {SamplerBuilder} from "./Sampler";
 import {ComputePipelineBuilder} from "./ComputePipeline";
-import {TextureFormat} from "./enums";
+import {ColorSpace, TextureFormat} from "./enums";
 import {mapUndefined} from "./utils/mapUndefined";
+import {BufferBuilder} from "./buffers/Buffer";
 
 /**
  * Options for initializing TinyHelix
@@ -83,7 +84,7 @@ export class TinyHelix {
     /**
      * Return the chosen depth/stencil format if configured.
      */
-    depthStencilFormat(): TextureFormat | undefined {
+    get depthStencilFormat(): TextureFormat | undefined {
         return this._options.depthStencilFormat;
     }
 
@@ -110,13 +111,36 @@ export class TinyHelix {
         return this._backbufferTarget!;
     }
 
+    get colorSpace(): ColorSpace
+    {
+        return this._context.colorSpace;
+    }
+
+    get backbufferFormat(): TextureFormat {
+        return this._context.format;
+    }
+
+    /**
+     * The width of the current backbuffer. Valid after `startFrame()`.
+     */
+    get backbufferWidth(): number {
+        return this._canvas.width;
+    }
+
+    /**
+     * The height of the current backbuffer. Valid after `startFrame()`.
+     */
+    get backbufferHeight(): number {
+        return this._canvas.height;
+    }
+
     /**
      * Needs to be called before rendering each frame. Updates internal backbuffer
      * references to the current swapchain texture.
      * @example tiny.startFrame();
      */
     startFrame() {
-        this._backbuffer = Texture.from_webgpu(this._context.getCurrentTexture());
+        this._backbuffer = Texture.from_webgpu(this._context.getCurrentTexture(), this._context.format);
         this._backbufferTarget = this.createRenderTarget(this._backbuffer)
             .build();
     }
@@ -171,7 +195,7 @@ export class TinyHelix {
      */
     createRenderPipeline(): RenderPipelineBuilder
     {
-        return new RenderPipelineBuilder(this._context, this.depthStencilFormat());
+        return new RenderPipelineBuilder(this._context, this._options.depthStencilFormat);
     }
 
     /**
@@ -220,6 +244,14 @@ export class TinyHelix {
     createUniformBuffer(layout: UniformBufferLayout): UniformBuffer
     {
         return new UniformBuffer(layout, this._context)
+    }
+
+    /**
+     * Create a BufferBuilder to construct raw buffers.
+     */
+    createBuffer(): BufferBuilder
+    {
+        return new BufferBuilder(this._context);
     }
 
     /**

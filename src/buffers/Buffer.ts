@@ -67,6 +67,16 @@ export class BufferBuilder {
         // round to the nearest multiple of 4 bytes, as required by GPUBuffer.writeBuffer()
         this._size = data.byteLength;
         this._keepData = keepOnCPU;
+        this._usage |= BufferUsage.CopyDst;
+        return this;
+    }
+
+    /**
+     * Specify a size for the buffer, used when not providing data.
+     */
+    withSize(size: number): this
+    {
+        this._size = size;
         return this;
     }
 

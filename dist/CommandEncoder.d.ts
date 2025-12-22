@@ -3,6 +3,7 @@ import { RenderPassBuilder } from "./RenderPass";
 import { RenderTarget } from "./RenderTarget";
 import { ComputePassBuilder } from "./ComputePass";
 import { BindGroup } from "./BindGroup";
+import { Buffer } from "./buffers/Buffer";
 /**
  * Encapsulates a GPUCommandEncoder and provides helper methods to build and
  * submit GPU commands for a single frame. CommandEncoder should only be created
@@ -22,6 +23,10 @@ export declare class CommandEncoder {
      * @internal
      */
     constructor(backbufferTarget: RenderTarget, globalBindGroups: BindGroup[], ctx: WebGPUContext, depthStencilTarget?: RenderTarget, label?: string);
+    /**
+     * Clears a buffer's contents
+     */
+    clearBuffer(buffer: Buffer, offset?: number, size?: number): this;
     /**
      * Begin building a render pass attached to this encoder.
      * Returns a fluent RenderPassBuilder used to configure attachments and clear ops.

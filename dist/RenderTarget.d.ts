@@ -1,12 +1,15 @@
 /// <reference types="@webgpu/types" />
 import { Texture } from "./Texture";
+import { TextureFormat } from "./enums";
 /**
  * Lightweight wrapper around a GPUTextureView representing a render target.
  * Use `view()` to get the underlying GPUTextureView when building render passes.
  */
 export declare class RenderTarget {
     readonly _inner: GPUTextureView;
-    constructor(view: GPUTextureView);
+    private _format;
+    constructor(view: GPUTextureView, format: TextureFormat);
+    get format(): TextureFormat;
 }
 /**
  * Builder for creating a `RenderTarget` from a `Texture`.

@@ -51,6 +51,10 @@ export declare class BufferBuilder {
      */
     withData(data: ArrayBufferLike, keepOnCPU?: boolean): this;
     /**
+     * Specify a size for the buffer, used when not providing data.
+     */
+    withSize(size: number): this;
+    /**
      * Create the GPU buffer and upload any provided data.
      */
     build(): Buffer;

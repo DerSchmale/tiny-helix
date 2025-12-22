@@ -4,13 +4,14 @@ import {Mesh} from "./Mesh";
 import {BindGroup} from "./BindGroup";
 import {IndexedCollection} from "./utils/IndexedCollection";
 import {mapUndefined} from "./utils/mapUndefined";
+import {TextureFormat} from "./enums";
 
 /**
  * Lightweight wrapper around GPURenderPassEncoder. Provides a minimal API
  * for ending the pass; higher-level helpers may be added later.
  */
 export class RenderPass {
-    private _inner: GPURenderPassEncoder;
+    private readonly _inner: GPURenderPassEncoder;
     private _renderPipeline?: RenderPipeline;
     private _numVertices: number = 0;
     private _numIndices: number = 0;
@@ -27,7 +28,7 @@ export class RenderPass {
      * Set the render pipeline to use for the next draw calls.
      * @param pipeline
      */
-    setRenderPipeline(pipeline: RenderPipeline): this {
+    setPipeline(pipeline: RenderPipeline): this {
         if (this._renderPipeline != pipeline) {
             this._inner.setPipeline(pipeline._inner);
             this._renderPipeline = pipeline;
@@ -203,6 +204,16 @@ export class RenderPassBuilder {
             depthTarget = this._defaultDepthTarget;
         }
 
+        let stencilLoadOp: GPULoadOp | undefined;
+        let stencilStoreOp: GPUStoreOp | undefined;
+        let stencilClearValue: number | undefined;
+
+        if (depthTarget?.format === TextureFormat.Depth32FloatStencil8 || depthTarget?.format === TextureFormat.Depth24PlusStencil8) {
+            stencilLoadOp = this._clearStencil != undefined ? 'clear' : 'load';
+            stencilStoreOp = mapUndefined(this._clearStencil, () => 'store');
+            stencilClearValue = this._clearStencil;
+        }
+
         const colorAttachments: GPURenderPassColorAttachment[] = targets.map((target, i) => ({
             view: target._inner,
             loadOp: this._clearColors[i] ? 'clear' : 'load',
@@ -215,11 +226,12 @@ export class RenderPassBuilder {
             depthStencilAttachment: mapUndefined(depthTarget, target => ({
                 view: target._inner,
                 depthClearValue: this._clearDepth,
-                stencilClearValue: this._clearStencil,
                 depthLoadOp: this._clearDepth != undefined ? 'clear' : 'load',
-                stencilLoadOp: this._clearStencil != undefined ? 'clear' : 'load',
                 depthStoreOp: mapUndefined(this._clearDepth, () => 'store'),
-                stencilStoreOp: mapUndefined(this._clearStencil, () => 'store')
+                stencilClearValue,
+                stencilLoadOp,
+                stencilStoreOp
+
             })),
             label: this._label
         };

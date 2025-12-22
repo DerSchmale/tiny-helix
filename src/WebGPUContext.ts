@@ -1,3 +1,5 @@
+import {ColorSpace, TextureFormat} from "./enums";
+
 /**
  * Options for initializing WebGPU context
  */
@@ -10,6 +12,7 @@ export interface WebGPUContextOptions {
     requiredFeatures?: GPUFeatureName[];
     /** Required limits for the device */
     requiredLimits?: Record<string, number>;
+    colorSpace?: ColorSpace;
 }
 
 /**
@@ -19,8 +22,9 @@ export class WebGPUContext {
     private _adapter: GPUAdapter | null = null;
     private _device: GPUDevice | null = null;
     private _context: GPUCanvasContext | null = null;
-    private _format: GPUTextureFormat = 'bgra8unorm';
+    private _format: TextureFormat = TextureFormat.Rgba8UnormSrgb;
     private _canvas: HTMLCanvasElement | null = null;
+    private _colorSpace: ColorSpace = ColorSpace.sRGB;
 
     /**
      * Gets the WebGPU adapter. Throws if not initialized.
@@ -46,8 +50,16 @@ export class WebGPUContext {
     /**
      * Gets the preferred texture format used by the configured canvas/context.
      */
-    get format(): GPUTextureFormat {
+    get format(): TextureFormat {
         return this._format;
+    }
+
+    /**
+     * Gets the color space used by the configured canvas/context.
+     */
+    get colorSpace(): ColorSpace
+    {
+        return this._colorSpace;
     }
 
     /**
@@ -79,8 +91,6 @@ export class WebGPUContext {
             powerPreference: options.powerPreference ?? 'high-performance',
         });
 
-        console.log(this._adapter);
-
         if (!this._adapter) {
             throw new Error('Failed to get WebGPU adapter');
         }
@@ -109,18 +119,25 @@ export class WebGPUContext {
         // Configure canvas context if provided
         if (options.canvas) {
             this._canvas = options.canvas;
-            this._context = this._canvas.getContext('webgpu') as GPUCanvasContext;
-            console.log(this._context);
+            this._context = this._canvas.getContext("webgpu") as GPUCanvasContext;
 
             if (!this._context) {
-                throw new Error('Failed to get WebGPU context from canvas');
+                throw new Error("Failed to get WebGPU context from canvas");
             }
 
-            this._format = navigator.gpu.getPreferredCanvasFormat();
+            const canUseP3 = window.matchMedia("(color-gamut: p3)").matches;
+            this._colorSpace = options.colorSpace ?? ColorSpace.sRGB;
+            if (this._colorSpace === ColorSpace.DisplayP3 && !canUseP3) {
+                this._colorSpace = ColorSpace.sRGB;
+                console.warn("DisplayP3 not supported, falling back to sRGB");
+            }
+
+            this._format = navigator.gpu.getPreferredCanvasFormat() as TextureFormat;
             this._context.configure({
                 device: this._device,
                 format: this._format,
-                alphaMode: 'premultiplied',
+                colorSpace: this._colorSpace,
+                alphaMode: "premultiplied",
             });
         }
         else {

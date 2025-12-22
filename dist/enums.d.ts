@@ -1,12 +1,6 @@
-export declare enum Enums {
-    Never = "never",
-    Less = "less",
-    Equal = "equal",
-    LessEqual = "less-equal",
-    Greater = "greater",
-    NotEqual = "not-equal",
-    GreaterEqual = "greater-equal",
-    Always = "always"
+export declare enum ColorSpace {
+    sRGB = "srgb",
+    DisplayP3 = "display-p3"
 }
 export declare enum FilterMode {
     Nearest = "nearest",
@@ -157,7 +151,7 @@ export declare enum CompareFunction {
     GreaterEqual = "greater-equal",
     Always = "always"
 }
-export declare enum StorageTextureAccess {
+export declare enum StorageAccess {
     ReadWrite = "read-write",
     Read = "read-only",
     Write = "write-only"

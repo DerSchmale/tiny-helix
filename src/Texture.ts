@@ -10,21 +10,27 @@ import {TextureUsage} from "./buffers/Buffer";
 export class Texture implements IBuffer {
     /** @internal */
     readonly _inner: GPUTexture;
+    private _format: TextureFormat;
 
     /**
      * Create a Texture wrapper from an existing GPUTexture.
      * @param texture - The underlying GPUTexture
      */
-    static from_webgpu(texture: GPUTexture): Texture {
-        return new Texture(texture);
+    static from_webgpu(texture: GPUTexture, format: TextureFormat): Texture {
+        return new Texture(texture, format);
     }
 
-    constructor(inner: GPUTexture) {
+    constructor(inner: GPUTexture, format: TextureFormat) {
         this._inner = inner;
+        this._format = format;
     }
 
     createView(): TextureViewBuilder {
         return new TextureViewBuilder(this);
+    }
+
+    get format(): TextureFormat {
+        return this._format;
     }
 
     _getBufferResource(): GPUBindingResource {
@@ -90,7 +96,7 @@ export class TextureBuilder {
                 {width, height, depthOrArrayLayers}
             );
         }
-        return new Texture(inner);
+        return new Texture(inner, this._format);
     }
 }
 

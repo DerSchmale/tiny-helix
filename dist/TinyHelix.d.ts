@@ -9,7 +9,8 @@ import { UniformBuffer, UniformBufferLayout, UniformBufferLayoutBuilder } from "
 import BindGroupLayoutBuilder, { BindGroup, BindGroupBuilder, BindGroupLayout } from "./BindGroup";
 import { SamplerBuilder } from "./Sampler";
 import { ComputePipelineBuilder } from "./ComputePipeline";
-import { TextureFormat } from "./enums";
+import { ColorSpace, TextureFormat } from "./enums";
+import { BufferBuilder } from "./buffers/Buffer";
 /**
  * Options for initializing TinyHelix
  */
@@ -57,7 +58,7 @@ export declare class TinyHelix {
     /**
      * Return the chosen depth/stencil format if configured.
      */
-    depthStencilFormat(): TextureFormat | undefined;
+    get depthStencilFormat(): TextureFormat | undefined;
     /**
      * The current frame's backbuffer texture. Valid after `startFrame()` has been
      * called.
@@ -69,6 +70,16 @@ export declare class TinyHelix {
      * @throws Error if accessed before startFrame()
      */
     get backbufferTarget(): RenderTarget;
+    get colorSpace(): ColorSpace;
+    get backbufferFormat(): TextureFormat;
+    /**
+     * The width of the current backbuffer. Valid after `startFrame()`.
+     */
+    get backbufferWidth(): number;
+    /**
+     * The height of the current backbuffer. Valid after `startFrame()`.
+     */
+    get backbufferHeight(): number;
     /**
      * Needs to be called before rendering each frame. Updates internal backbuffer
      * references to the current swapchain texture.
@@ -124,6 +135,10 @@ export declare class TinyHelix {
      * Create a UniformBuffer for the given layout.
      */
     createUniformBuffer(layout: UniformBufferLayout): UniformBuffer;
+    /**
+     * Create a BufferBuilder to construct raw buffers.
+     */
+    createBuffer(): BufferBuilder;
     /**
      * Allows setting a global bind group for all render passes. This is useful
      * for setting bind groups that are used by all passes. These buffers will

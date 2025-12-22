@@ -3,6 +3,7 @@ import {RenderPassBuilder} from "./RenderPass";
 import {RenderTarget} from "./RenderTarget";
 import {ComputePassBuilder} from "./ComputePass";
 import {BindGroup} from "./BindGroup";
+import {Buffer} from "./buffers/Buffer";
 
 /**
  * Encapsulates a GPUCommandEncoder and provides helper methods to build and
@@ -30,6 +31,15 @@ export class CommandEncoder {
         this._depthStencilTarget = depthStencilTarget;
         this._globalBindGroups = globalBindGroups;
         this._encoder = device.createCommandEncoder({label});
+    }
+
+    /**
+     * Clears a buffer's contents
+     */
+    clearBuffer(buffer: Buffer, offset?: number, size?: number): this
+    {
+        this._encoder.clearBuffer(buffer._inner, offset, size);
+        return this;
     }
 
     /**

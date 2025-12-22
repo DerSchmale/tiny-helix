@@ -3,7 +3,7 @@ import { BindGroup } from "./BindGroup";
 import { ComputePipeline } from "./ComputePipeline";
 import { Buffer } from "./buffers/Buffer";
 export declare class ComputePass {
-    private _inner;
+    private readonly _inner;
     constructor(inner: GPUComputePassEncoder);
     /**
      * Set the compute pipeline to use for the next dispatch calls.

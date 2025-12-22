@@ -5,14 +5,15 @@ import {mapUndefined} from "./utils/mapUndefined";
 import {Texture, TextureView} from "./Texture";
 import {Sampler} from "./Sampler";
 import {TextureFormat} from "../dist";
-import {StorageTextureAccess} from "./enums";
+import {StorageAccess} from "./enums";
 
 /**
  * Lightweight wrapper around a GPUBindGroup.
  * Use {@link TinyHelix.createBindGroup} to create instances.
  */
 export class BindGroup {
-    _inner: GPUBindGroup;
+    /** @internal */
+    readonly _inner: GPUBindGroup;
 
     /**
      * Construct a wrapper around an existing GPUBindGroup.
@@ -182,13 +183,20 @@ class BindGroupLayoutBuilder {
      * Add a storage buffer binding at the given index and record its layout.
      * @param index - binding index
      * @param field_name - a name used to reference the layout later
+     * @param access_mode - Defines whether the storage buffer is read-only or not.
      * @param visibility - shader stage visibility flags (defaults to FRAGMENT|COMPUTE)
      */
-    withStorageBuffer(index: number, field_name: string, visibility?: GPUShaderStageFlags): this {
+    withStorageBuffer(index: number, field_name: string, access_mode: StorageAccess, visibility?: GPUShaderStageFlags): this {
+        let type: GPUBufferBindingType = "storage";
+
+        if (access_mode === StorageAccess.Read) {
+            type = "read-only-storage";
+        }
+
         this._entries[index] = {
             binding: index,
             visibility: visibility ?? GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE,
-            buffer: {type: 'storage', hasDynamicOffset: true, minBindingSize: 4}
+            buffer: {type, hasDynamicOffset: false, minBindingSize: 4}
         };
         this._indices.set(field_name, index);
         return this;
@@ -203,7 +211,7 @@ class BindGroupLayoutBuilder {
      * @param access_mode
      * @param visibility
      */
-    withStorageTexture(index: number, field_name: string, format: TextureFormat, access_mode: StorageTextureAccess, visibility?: GPUShaderStageFlags): this {
+    withStorageTexture(index: number, field_name: string, format: TextureFormat, access_mode: StorageAccess, visibility?: GPUShaderStageFlags): this {
         this._entries[index] = {
             binding: index,
             visibility: visibility ?? GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE,

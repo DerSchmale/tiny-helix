@@ -9,7 +9,7 @@ import { IndexedCollection } from "./utils/IndexedCollection";
  * for ending the pass; higher-level helpers may be added later.
  */
 export declare class RenderPass {
-    private _inner;
+    private readonly _inner;
     private _renderPipeline?;
     private _numVertices;
     private _numIndices;
@@ -22,7 +22,7 @@ export declare class RenderPass {
      * Set the render pipeline to use for the next draw calls.
      * @param pipeline
      */
-    setRenderPipeline(pipeline: RenderPipeline): this;
+    setPipeline(pipeline: RenderPipeline): this;
     /**
      * Sets the mesh to use for the next draw calls.
      * @param mesh

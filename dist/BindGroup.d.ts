@@ -5,13 +5,14 @@ import { IBuffer } from "./buffers/IBuffer";
 import { Texture, TextureView } from "./Texture";
 import { Sampler } from "./Sampler";
 import { TextureFormat } from "../dist";
-import { StorageTextureAccess } from "./enums";
+import { StorageAccess } from "./enums";
 /**
  * Lightweight wrapper around a GPUBindGroup.
  * Use {@link TinyHelix.createBindGroup} to create instances.
  */
 export declare class BindGroup {
-    _inner: GPUBindGroup;
+    /** @internal */
+    readonly _inner: GPUBindGroup;
     /**
      * Construct a wrapper around an existing GPUBindGroup.
      * @internal
@@ -96,9 +97,10 @@ declare class BindGroupLayoutBuilder {
      * Add a storage buffer binding at the given index and record its layout.
      * @param index - binding index
      * @param field_name - a name used to reference the layout later
+     * @param access_mode - Defines whether the storage buffer is read-only or not.
      * @param visibility - shader stage visibility flags (defaults to FRAGMENT|COMPUTE)
      */
-    withStorageBuffer(index: number, field_name: string, visibility?: GPUShaderStageFlags): this;
+    withStorageBuffer(index: number, field_name: string, access_mode: StorageAccess, visibility?: GPUShaderStageFlags): this;
     /**
      * Add a storage texture binding at the given index. The texture will be
      * write-only and use RGBA8Unorm format.
@@ -108,7 +110,7 @@ declare class BindGroupLayoutBuilder {
      * @param access_mode
      * @param visibility
      */
-    withStorageTexture(index: number, field_name: string, format: TextureFormat, access_mode: StorageTextureAccess, visibility?: GPUShaderStageFlags): this;
+    withStorageTexture(index: number, field_name: string, format: TextureFormat, access_mode: StorageAccess, visibility?: GPUShaderStageFlags): this;
     withTexture(index: number, field_name: string, visibility?: GPUShaderStageFlags): this;
     withSampler(index: number, field_name: string, visibility?: GPUShaderStageFlags): this;
     /**

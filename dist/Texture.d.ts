@@ -10,13 +10,15 @@ import { TextureUsage } from "./buffers/Buffer";
 export declare class Texture implements IBuffer {
     /** @internal */
     readonly _inner: GPUTexture;
+    private _format;
     /**
      * Create a Texture wrapper from an existing GPUTexture.
      * @param texture - The underlying GPUTexture
      */
-    static from_webgpu(texture: GPUTexture): Texture;
-    constructor(inner: GPUTexture);
+    static from_webgpu(texture: GPUTexture, format: TextureFormat): Texture;
+    constructor(inner: GPUTexture, format: TextureFormat);
     createView(): TextureViewBuilder;
+    get format(): TextureFormat;
     _getBufferResource(): GPUBindingResource;
 }
 export declare class TextureBuilder {

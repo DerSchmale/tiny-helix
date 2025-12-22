@@ -1,4 +1,5 @@
 /// <reference types="@webgpu/types" />
+import { ColorSpace, TextureFormat } from "./enums";
 /**
  * Options for initializing WebGPU context
  */
@@ -11,6 +12,7 @@ export interface WebGPUContextOptions {
     requiredFeatures?: GPUFeatureName[];
     /** Required limits for the device */
     requiredLimits?: Record<string, number>;
+    colorSpace?: ColorSpace;
 }
 /**
  * Manages WebGPU adapter, device, and context initialization
@@ -21,6 +23,7 @@ export declare class WebGPUContext {
     private _context;
     private _format;
     private _canvas;
+    private _colorSpace;
     /**
      * Gets the WebGPU adapter. Throws if not initialized.
      */
@@ -36,7 +39,11 @@ export declare class WebGPUContext {
     /**
      * Gets the preferred texture format used by the configured canvas/context.
      */
-    get format(): GPUTextureFormat;
+    get format(): TextureFormat;
+    /**
+     * Gets the color space used by the configured canvas/context.
+     */
+    get colorSpace(): ColorSpace;
     /**
      * Gets the configured canvas element. Throws if none was provided during initialization.
      */

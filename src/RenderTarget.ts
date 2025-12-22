@@ -1,4 +1,5 @@
 import {Texture} from "./Texture";
+import {TextureFormat} from "./enums";
 
 /**
  * Lightweight wrapper around a GPUTextureView representing a render target.
@@ -6,9 +7,16 @@ import {Texture} from "./Texture";
  */
 export class RenderTarget {
     readonly _inner: GPUTextureView;
+    private _format: TextureFormat;
 
-    constructor(view: GPUTextureView) {
+    constructor(view: GPUTextureView, format: TextureFormat) {
         this._inner = view;
+        this._format = format;
+    }
+
+    get format(): TextureFormat
+    {
+        return this._format;
     }
 }
 
@@ -64,6 +72,6 @@ export class RenderTargetBuilder {
             baseArrayLayer: this._baseArrayLayer,
             arrayLayerCount: 1
         }
-        return new RenderTarget(this._texture._inner.createView(desc));
+        return new RenderTarget(this._texture._inner.createView(desc), this._texture.format);
     }
 }
