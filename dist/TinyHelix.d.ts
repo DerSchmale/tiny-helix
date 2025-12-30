@@ -33,6 +33,7 @@ export declare class TinyHelix {
     private _canvas;
     private _globalBindBufferLayouts;
     private _globalBindBuffers;
+    private _mipShader;
     /**
      * Create a new TinyHelix instance. Call `initialize()` before rendering.
      */

@@ -1,7 +1,9 @@
 import {WebGPUContext} from "./WebGPUContext";
-import {TextureFormat} from "./enums";
+import {TextureDimension, TextureFormat, TextureViewDimension} from "./enums";
 import {IBuffer} from "./buffers/IBuffer";
 import {TextureUsage} from "./buffers/Buffer";
+import {MipRenderer} from "./utils/MipRenderer";
+import {mapUndefined} from "./utils/mapUndefined";
 
 /**
  * Small wrapper around GPUTexture providing convenience constructors and
@@ -11,18 +13,21 @@ export class Texture implements IBuffer {
     /** @internal */
     readonly _inner: GPUTexture;
     private _format: TextureFormat;
+    private _ctx: WebGPUContext;
+    private _mipper?: MipRenderer;
 
     /**
-     * Create a Texture wrapper from an existing GPUTexture.
-     * @param texture - The underlying GPUTexture
+     * @internal
      */
-    static from_webgpu(texture: GPUTexture, format: TextureFormat): Texture {
-        return new Texture(texture, format);
+    static from_webgpu(texture: GPUTexture, format: TextureFormat, ctx: WebGPUContext, mipShader: GPUShaderModule): Texture {
+        return new Texture(texture, format, ctx, mipShader);
     }
 
-    constructor(inner: GPUTexture, format: TextureFormat) {
+    constructor(inner: GPUTexture, format: TextureFormat, ctx: WebGPUContext, mipShader?: GPUShaderModule) {
         this._inner = inner;
         this._format = format;
+        this._ctx = ctx;
+        this._mipper = mapUndefined(mipShader, (mipShader) => new MipRenderer(ctx, mipShader, this));
     }
 
     createView(): TextureViewBuilder {
@@ -33,29 +38,101 @@ export class Texture implements IBuffer {
         return this._format;
     }
 
+    get mipLevelCount(): number {
+        return this._inner.mipLevelCount;
+    }
+
+    get width(): number {
+        return this._inner.width;
+    }
+
+    get height(): number {
+        return this._inner.height;
+    }
+
+    get depthOrArrayLayers(): number {
+        return this._inner.depthOrArrayLayers;
+    }
+
     _getBufferResource(): GPUBindingResource {
         return this._inner.createView();
     }
+
+    uploadImage(data: ImageBitmap, mipLevel: number = 0) {
+        this._ctx.device.queue.copyExternalImageToTexture({source: data}, {texture: this._inner, mipLevel}, [data.width, data.height, 1]);
+    }
+
+    uploadData(data: GPUAllowSharedBufferSource, mipLevel: number = 0) {
+        const width = Math.max(this._inner.width >> mipLevel, 1);
+        const height = Math.max(this._inner.height >> mipLevel, 1);
+        const depthOrArrayLayers = Math.max(this._inner.depthOrArrayLayers >> mipLevel, 1);
+        const blockWidth = getBlockWidth(this._format);
+        const blocksPerRow = Math.ceil(width / blockWidth);
+        const bytesPerRow = blocksPerRow * bytesPerBlock(this._format);
+
+        this._ctx.device.queue.writeTexture(
+            {texture: this._inner, mipLevel},
+            data,
+            {bytesPerRow},
+            {width, height, depthOrArrayLayers}
+        );
+    }
+
+    generateMipmaps() {
+        if (this._inner.dimension !== TextureDimension.D2) {
+            throw new Error('generateMipmaps currently only supports 2D textures.');
+        }
+
+        this._mipper!.render();
+    }
+
+    dimension(): TextureDimension {
+        switch (this._inner.dimension) {
+            case "1d":
+                return TextureDimension.D1;
+            case "2d":
+                return TextureDimension.D2;
+            case "3d":
+                return TextureDimension.D3;
+            default:
+                throw new Error(`Unknown texture dimension: ${this._inner.dimension}`);
+        }
+    }
 }
+
+type TextureData = GPUAllowSharedBufferSource | ImageBitmap;
 
 export class TextureBuilder {
     private _ctx: WebGPUContext;
     private _size: [number, number, number] = [1, 1, 1];
-    private _data: ImageBitmap | GPUAllowSharedBufferSource | undefined = undefined;
+    private _data?: TextureData[];
     private _format: TextureFormat = TextureFormat.Rgba8UnormSrgb;
     private _usage: GPUTextureUsageFlags = GPUTextureUsage.TEXTURE_BINDING;
+    private _dimension: TextureDimension = TextureDimension.D2;
+    private _mipLevelCount: number = 1; // -1 will mean auto calculate based on size
+    private _generateMips: boolean = false;
+    private _mipShader: GPUShaderModule;
 
-    constructor(ctx: WebGPUContext) {
+    constructor(ctx: WebGPUContext, mipShader: GPUShaderModule) {
+        this._mipShader = mipShader;
         this._ctx = ctx;
     }
 
     withSize(width: number, height: number, depthOrArrayLayers: number = 1): this {
         this._size = [width, height, depthOrArrayLayers];
+        if (depthOrArrayLayers > 1) {
+            this._dimension = TextureDimension.D3;
+        }
         return this;
     }
 
-    withData(data: GPUAllowSharedBufferSource): this {
-        this._data = data;
+    withDimension(dim: TextureDimension): this {
+        this._dimension = dim;
+        return this;
+    }
+
+    withMipLevels(count?: number): this {
+        this._mipLevelCount = count ?? -1;
         return this;
     }
 
@@ -64,9 +141,28 @@ export class TextureBuilder {
         return this;
     }
 
-    withImage(data: ImageBitmap): this {
-        this._data = data;
-        this._size = [data.width, data.height, 1];
+    withData(data: GPUAllowSharedBufferSource, mipLevel: number = 0): this {
+        this._data = this._data ?? [];
+        this._data[mipLevel] = data;
+        this._mipLevelCount = Math.max(this._mipLevelCount, mipLevel + 1);
+        return this;
+    }
+
+    withImage(data: ImageBitmap, mipLevel: number = 0): this {
+        this._data = this._data ?? [];
+        this._data[mipLevel] = data;
+        if (mipLevel === 0) {
+            this._size = [data.width, data.height, 1];
+        }
+
+        this._mipLevelCount = Math.max(this._mipLevelCount, mipLevel + 1);
+
+        return this;
+    }
+
+    withGeneratedMipmaps(): this {
+        this._mipLevelCount = -1;
+        this._generateMips = true;
         return this;
     }
 
@@ -79,29 +175,49 @@ export class TextureBuilder {
         if (this._data) {
             this._usage |= GPUTextureUsage.COPY_DST;
         }
-        const inner = this._ctx.device.createTexture({
-            format: this._format, size: this._size, usage: this._usage
-        })
-        if (this._data instanceof ImageBitmap) {
-            this._ctx.device.queue.copyExternalImageToTexture({source: this._data!}, {texture: inner}, [this._size[0], this._size[1], 1]);
-        } else if (this._data) {
-            const [width, height, depthOrArrayLayers] = this._size;
-            const blockWidth = getBlockWidth(this._format);
-            const blocksPerRow = Math.ceil(width / blockWidth);
-            const bytesPerRow = blocksPerRow * bytesPerBlock(this._format);
-            this._ctx.device.queue.writeTexture(
-                {texture: inner},
-                this._data,
-                {bytesPerRow},
-                {width, height, depthOrArrayLayers}
-            );
+
+        if (this._generateMips) {
+            this._usage |= GPUTextureUsage.RENDER_ATTACHMENT;
         }
-        return new Texture(inner, this._format);
+
+        if (this._mipLevelCount == -1) {
+            const maxDimension = Math.max(this._size[0], this._size[1], this._size[2]);
+            this._mipLevelCount = Math.floor(Math.log2(maxDimension)) + 1;
+        }
+
+        const inner = this._ctx.device.createTexture({
+            format: this._format, size: this._size, usage: this._usage,
+            dimension: this._dimension,
+            mipLevelCount: this._mipLevelCount
+        })
+
+        const tex = new Texture(inner, this._format, this._ctx, this._generateMips? this._mipShader : undefined);
+
+        if (this._data) {
+            const mipCount = this._generateMips? 1 : this._mipLevelCount;
+
+            for (let mipLevel = 0; mipLevel < mipCount; mipLevel++) {
+                const data = this._data[mipLevel];
+                if (!data) throw new Error(`TextureBuilder: Missing data for mip level ${mipLevel}`);
+
+                if (data instanceof ImageBitmap) {
+                    tex.uploadImage(data, mipLevel);
+                } else {
+                    tex.uploadData(data, mipLevel);
+                }
+            }
+
+            if (this._generateMips) {
+                // Generate mipmaps using a simple render pass approach
+                tex.generateMipmaps();
+            }
+        }
+
+        return tex;
     }
 }
 
-export class TextureView
-{
+export class TextureView {
     /** @internal */
     _inner: GPUTextureView;
 
@@ -121,36 +237,45 @@ export class TextureViewBuilder {
         this._texture = texture;
     }
 
-    withSingleMip(level: number): this
-    {
+    withUsage(usage: TextureUsage): this {
+        if (this._desc.usage === undefined) {
+            this._desc.usage = 0;
+        }
+
+        this._desc.usage |= usage;
+        return this;
+    }
+
+    withSingleMip(level: number): this {
         this._desc.baseMipLevel = level;
         this._desc.mipLevelCount = 1;
         return this;
     }
 
-    withMipRange(start: number, end: number): this
-    {
+    withMipRange(start: number, end: number): this {
         this._desc.baseMipLevel = start;
         this._desc.mipLevelCount = end - start;
         return this;
     }
 
-    withSingleLayer(layer: number): this
-    {
+    withSingleLayer(layer: number): this {
         this._desc.baseArrayLayer = layer;
         this._desc.arrayLayerCount = 1;
         return this;
     }
 
-    withLayerRange(start: number, end: number): this
-    {
+    withLayerRange(start: number, end: number): this {
         this._desc.baseArrayLayer = start;
         this._desc.arrayLayerCount = end;
         return this;
     }
 
-    build(): TextureView
-    {
+    withDimension(dim: TextureViewDimension): this {
+        this._desc.dimension = dim;
+        return this;
+    }
+
+    build(): TextureView {
         return new TextureView(this._texture._inner.createView(this._desc));
     }
 }
@@ -172,7 +297,8 @@ function isBc(format: GPUTextureFormat): boolean {
         case TextureFormat.Bc7RgbaUnorm:
         case TextureFormat.Bc7RgbaUnormSrgb:
             return true;
-        default: return false;
+        default:
+            return false;
     }
 }
 

@@ -80,7 +80,7 @@ class BindGroupBuilder {
     withTexture(fieldName, texture) {
         const index = this._layout._getBindingIndex(fieldName);
         this._entries[index] = {
-            binding: index, resource: texture._inner
+            binding: index, resource: texture._inner,
         };
         return this;
     }
@@ -163,7 +163,7 @@ class BindGroupLayoutBuilder {
     withUniformBuffer(index, field_name, layout, visibility) {
         this._entries[index] = {
             binding: index,
-            visibility: visibility ?? GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE,
+            visibility: visibility ?? _enums__WEBPACK_IMPORTED_MODULE_2__.ShaderStage.Vertex | _enums__WEBPACK_IMPORTED_MODULE_2__.ShaderStage.Fragment | _enums__WEBPACK_IMPORTED_MODULE_2__.ShaderStage.Compute,
             buffer: { type: 'uniform' }
         };
         this._indices.set(field_name, index);
@@ -184,7 +184,7 @@ class BindGroupLayoutBuilder {
         }
         this._entries[index] = {
             binding: index,
-            visibility: visibility ?? GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE,
+            visibility: visibility ?? _enums__WEBPACK_IMPORTED_MODULE_2__.ShaderStage.Fragment | _enums__WEBPACK_IMPORTED_MODULE_2__.ShaderStage.Compute,
             buffer: { type, hasDynamicOffset: false, minBindingSize: 4 }
         };
         this._indices.set(fieldName, index);
@@ -198,21 +198,29 @@ class BindGroupLayoutBuilder {
      * @param format
      * @param accessMode
      * @param visibility
+     * @param viewDimension
      */
-    withStorageTexture(index, fieldName, format, accessMode, visibility) {
+    withStorageTexture(index, fieldName, format, accessMode, visibility, viewDimension) {
         this._entries[index] = {
             binding: index,
-            visibility: visibility ?? GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE,
-            storageTexture: { access: accessMode, format }
+            visibility: visibility ?? _enums__WEBPACK_IMPORTED_MODULE_2__.ShaderStage.Fragment | _enums__WEBPACK_IMPORTED_MODULE_2__.ShaderStage.Compute,
+            storageTexture: {
+                access: accessMode,
+                format,
+                viewDimension: viewDimension ?? "2d"
+            }
         };
         this._indices.set(fieldName, index);
         return this;
     }
-    withTexture(index, fieldName, sampleType = _enums__WEBPACK_IMPORTED_MODULE_2__.TextureSampleType.Float, visibility) {
+    withTexture(index, fieldName, visibility, viewDimension, sampleType = _enums__WEBPACK_IMPORTED_MODULE_2__.TextureSampleType.Float) {
         this._entries[index] = {
             binding: index,
-            visibility: visibility ?? GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE,
-            texture: { sampleType }
+            visibility: visibility ?? _enums__WEBPACK_IMPORTED_MODULE_2__.ShaderStage.Fragment | _enums__WEBPACK_IMPORTED_MODULE_2__.ShaderStage.Compute,
+            texture: {
+                sampleType,
+                viewDimension: viewDimension ?? "2d"
+            }
         };
         this._indices.set(fieldName, index);
         return this;
@@ -220,7 +228,7 @@ class BindGroupLayoutBuilder {
     withSampler(index, fieldName, samplerType = _enums__WEBPACK_IMPORTED_MODULE_2__.SamplerType.Filtering, visibility) {
         this._entries[index] = {
             binding: index,
-            visibility: visibility ?? GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE,
+            visibility: visibility ?? _enums__WEBPACK_IMPORTED_MODULE_2__.ShaderStage.Fragment | _enums__WEBPACK_IMPORTED_MODULE_2__.ShaderStage.Compute,
             sampler: { type: samplerType }
         };
         this._indices.set(fieldName, index);
@@ -1158,6 +1166,18 @@ class RenderPipelineBuilder {
         this.lastColorTarget.blend = blendMode._inner;
         return this;
     }
+    /** Set the color write mask for the last assigned (or default) color target. */
+    withColorWrite(r, g, b, a) {
+        g ?? (g = r);
+        b ?? (b = g);
+        a ?? (a = b);
+        this.lastColorTarget.writeMask =
+            (r ? GPUColorWrite.RED : 0) |
+                (g ? GPUColorWrite.GREEN : 0) |
+                (b ? GPUColorWrite.BLUE : 0) |
+                (a ? GPUColorWrite.ALPHA : 0);
+        return this;
+    }
     /**
      * Build and create the `RenderPipeline`. Throws if required pieces (shader/vertices)
      * are missing.
@@ -1480,7 +1500,7 @@ class ShaderBuilder {
         return this;
     }
     /** Declare a named vertex attribute and the location it maps to in the shader. */
-    withVertexAttribute(name, location) {
+    withVertexAttribute(location, name) {
         this._vertexAttributes.set(name, location);
         return this;
     }
@@ -1538,6 +1558,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   TextureViewBuilder: () => (/* binding */ TextureViewBuilder)
 /* harmony export */ });
 /* harmony import */ var _enums__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./enums */ "./src/enums.ts");
+/* harmony import */ var _utils_MipRenderer__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./utils/MipRenderer */ "./src/utils/MipRenderer.ts");
+/* harmony import */ var _utils_mapUndefined__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./utils/mapUndefined */ "./src/utils/mapUndefined.ts");
+
+
 
 /**
  * Small wrapper around GPUTexture providing convenience constructors and
@@ -1545,15 +1569,16 @@ __webpack_require__.r(__webpack_exports__);
  */
 class Texture {
     /**
-     * Create a Texture wrapper from an existing GPUTexture.
-     * @param texture - The underlying GPUTexture
+     * @internal
      */
-    static from_webgpu(texture, format) {
-        return new Texture(texture, format);
+    static from_webgpu(texture, format, ctx, mipShader) {
+        return new Texture(texture, format, ctx, mipShader);
     }
-    constructor(inner, format) {
+    constructor(inner, format, ctx, mipShader) {
         this._inner = inner;
         this._format = format;
+        this._ctx = ctx;
+        this._mipper = (0,_utils_mapUndefined__WEBPACK_IMPORTED_MODULE_2__.mapUndefined)(mipShader, (mipShader) => new _utils_MipRenderer__WEBPACK_IMPORTED_MODULE_1__.MipRenderer(ctx, mipShader, this));
     }
     createView() {
         return new TextureViewBuilder(this);
@@ -1561,33 +1586,100 @@ class Texture {
     get format() {
         return this._format;
     }
+    get mipLevelCount() {
+        return this._inner.mipLevelCount;
+    }
+    get width() {
+        return this._inner.width;
+    }
+    get height() {
+        return this._inner.height;
+    }
+    get depthOrArrayLayers() {
+        return this._inner.depthOrArrayLayers;
+    }
     _getBufferResource() {
         return this._inner.createView();
     }
+    uploadImage(data, mipLevel = 0) {
+        this._ctx.device.queue.copyExternalImageToTexture({ source: data }, { texture: this._inner, mipLevel }, [data.width, data.height, 1]);
+    }
+    uploadData(data, mipLevel = 0) {
+        const width = Math.max(this._inner.width >> mipLevel, 1);
+        const height = Math.max(this._inner.height >> mipLevel, 1);
+        const depthOrArrayLayers = Math.max(this._inner.depthOrArrayLayers >> mipLevel, 1);
+        const blockWidth = getBlockWidth(this._format);
+        const blocksPerRow = Math.ceil(width / blockWidth);
+        const bytesPerRow = blocksPerRow * bytesPerBlock(this._format);
+        this._ctx.device.queue.writeTexture({ texture: this._inner, mipLevel }, data, { bytesPerRow }, { width, height, depthOrArrayLayers });
+    }
+    generateMipmaps() {
+        if (this._inner.dimension !== _enums__WEBPACK_IMPORTED_MODULE_0__.TextureDimension.D2) {
+            throw new Error('generateMipmaps currently only supports 2D textures.');
+        }
+        this._mipper.render();
+    }
+    dimension() {
+        switch (this._inner.dimension) {
+            case "1d":
+                return _enums__WEBPACK_IMPORTED_MODULE_0__.TextureDimension.D1;
+            case "2d":
+                return _enums__WEBPACK_IMPORTED_MODULE_0__.TextureDimension.D2;
+            case "3d":
+                return _enums__WEBPACK_IMPORTED_MODULE_0__.TextureDimension.D3;
+            default:
+                throw new Error(`Unknown texture dimension: ${this._inner.dimension}`);
+        }
+    }
 }
 class TextureBuilder {
-    constructor(ctx) {
+    constructor(ctx, mipShader) {
         this._size = [1, 1, 1];
-        this._data = undefined;
         this._format = _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Rgba8UnormSrgb;
         this._usage = GPUTextureUsage.TEXTURE_BINDING;
+        this._dimension = _enums__WEBPACK_IMPORTED_MODULE_0__.TextureDimension.D2;
+        this._mipLevelCount = 1; // -1 will mean auto calculate based on size
+        this._generateMips = false;
+        this._mipShader = mipShader;
         this._ctx = ctx;
     }
     withSize(width, height, depthOrArrayLayers = 1) {
         this._size = [width, height, depthOrArrayLayers];
+        if (depthOrArrayLayers > 1) {
+            this._dimension = _enums__WEBPACK_IMPORTED_MODULE_0__.TextureDimension.D3;
+        }
         return this;
     }
-    withData(data) {
-        this._data = data;
+    withDimension(dim) {
+        this._dimension = dim;
+        return this;
+    }
+    withMipLevels(count) {
+        this._mipLevelCount = count ?? -1;
         return this;
     }
     withFormat(format) {
         this._format = format;
         return this;
     }
-    withImage(data) {
-        this._data = data;
-        this._size = [data.width, data.height, 1];
+    withData(data, mipLevel = 0) {
+        this._data = this._data ?? [];
+        this._data[mipLevel] = data;
+        this._mipLevelCount = Math.max(this._mipLevelCount, mipLevel + 1);
+        return this;
+    }
+    withImage(data, mipLevel = 0) {
+        this._data = this._data ?? [];
+        this._data[mipLevel] = data;
+        if (mipLevel === 0) {
+            this._size = [data.width, data.height, 1];
+        }
+        this._mipLevelCount = Math.max(this._mipLevelCount, mipLevel + 1);
+        return this;
+    }
+    withGeneratedMipmaps() {
+        this._mipLevelCount = -1;
+        this._generateMips = true;
         return this;
     }
     withUsage(usage) {
@@ -1598,20 +1690,38 @@ class TextureBuilder {
         if (this._data) {
             this._usage |= GPUTextureUsage.COPY_DST;
         }
+        if (this._generateMips) {
+            this._usage |= GPUTextureUsage.RENDER_ATTACHMENT;
+        }
+        if (this._mipLevelCount == -1) {
+            const maxDimension = Math.max(this._size[0], this._size[1], this._size[2]);
+            this._mipLevelCount = Math.floor(Math.log2(maxDimension)) + 1;
+        }
         const inner = this._ctx.device.createTexture({
-            format: this._format, size: this._size, usage: this._usage
+            format: this._format, size: this._size, usage: this._usage,
+            dimension: this._dimension,
+            mipLevelCount: this._mipLevelCount
         });
-        if (this._data instanceof ImageBitmap) {
-            this._ctx.device.queue.copyExternalImageToTexture({ source: this._data }, { texture: inner }, [this._size[0], this._size[1], 1]);
+        const tex = new Texture(inner, this._format, this._ctx, this._generateMips ? this._mipShader : undefined);
+        if (this._data) {
+            const mipCount = this._generateMips ? 1 : this._mipLevelCount;
+            for (let mipLevel = 0; mipLevel < mipCount; mipLevel++) {
+                const data = this._data[mipLevel];
+                if (!data)
+                    throw new Error(`TextureBuilder: Missing data for mip level ${mipLevel}`);
+                if (data instanceof ImageBitmap) {
+                    tex.uploadImage(data, mipLevel);
+                }
+                else {
+                    tex.uploadData(data, mipLevel);
+                }
+            }
+            if (this._generateMips) {
+                // Generate mipmaps using a simple render pass approach
+                tex.generateMipmaps();
+            }
         }
-        else if (this._data) {
-            const [width, height, depthOrArrayLayers] = this._size;
-            const blockWidth = getBlockWidth(this._format);
-            const blocksPerRow = Math.ceil(width / blockWidth);
-            const bytesPerRow = blocksPerRow * bytesPerBlock(this._format);
-            this._ctx.device.queue.writeTexture({ texture: inner }, this._data, { bytesPerRow }, { width, height, depthOrArrayLayers });
-        }
-        return new Texture(inner, this._format);
+        return tex;
     }
 }
 class TextureView {
@@ -1626,6 +1736,13 @@ class TextureViewBuilder {
     constructor(texture) {
         this._desc = {};
         this._texture = texture;
+    }
+    withUsage(usage) {
+        if (this._desc.usage === undefined) {
+            this._desc.usage = 0;
+        }
+        this._desc.usage |= usage;
+        return this;
     }
     withSingleMip(level) {
         this._desc.baseMipLevel = level;
@@ -1645,6 +1762,10 @@ class TextureViewBuilder {
     withLayerRange(start, end) {
         this._desc.baseArrayLayer = start;
         this._desc.arrayLayerCount = end;
+        return this;
+    }
+    withDimension(dim) {
+        this._desc.dimension = dim;
         return this;
     }
     build() {
@@ -1668,7 +1789,8 @@ function isBc(format) {
         case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc7RgbaUnorm:
         case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc7RgbaUnormSrgb:
             return true;
-        default: return false;
+        default:
+            return false;
     }
 }
 function isEtc(format) {
@@ -1882,6 +2004,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _ComputePipeline__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ./ComputePipeline */ "./src/ComputePipeline.ts");
 /* harmony import */ var _utils_mapUndefined__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ./utils/mapUndefined */ "./src/utils/mapUndefined.ts");
 /* harmony import */ var _buffers_Buffer__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! ./buffers/Buffer */ "./src/buffers/Buffer.ts");
+/* harmony import */ var _wgsl_mip_2d_2x2_wgsl__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! ./wgsl/mip_2d_2x2.wgsl */ "./src/wgsl/mip_2d_2x2.wgsl");
+
 
 
 
@@ -1921,6 +2045,10 @@ class TinyHelix {
         this._options = options;
         await this._context.initialize(options);
         this._createDepthStencil();
+        this._mipShader = this._context.device.createShaderModule({
+            code: _wgsl_mip_2d_2x2_wgsl__WEBPACK_IMPORTED_MODULE_13__,
+            label: "MipRenderer Shader Module",
+        });
     }
     resize(width, height) {
         this._canvas.width = width;
@@ -1992,7 +2120,7 @@ class TinyHelix {
      * @example tiny.startFrame();
      */
     startFrame() {
-        this._backbuffer = _Texture__WEBPACK_IMPORTED_MODULE_2__.Texture.from_webgpu(this._context.getCurrentTexture(), this._context.format);
+        this._backbuffer = _Texture__WEBPACK_IMPORTED_MODULE_2__.Texture.from_webgpu(this._context.getCurrentTexture(), this._context.format, this._context, this._mipShader);
         this._backbufferTarget = this.createRenderTarget(this._backbuffer)
             .build();
     }
@@ -2051,7 +2179,7 @@ class TinyHelix {
      * Create a TextureBuilder for creating a Texture.
      */
     createTexture() {
-        return new _Texture__WEBPACK_IMPORTED_MODULE_2__.TextureBuilder(this._context);
+        return new _Texture__WEBPACK_IMPORTED_MODULE_2__.TextureBuilder(this._context, this._mipShader);
     }
     /**
      * Creates a command encoder for recording GPU commands for the current frame.
@@ -2908,14 +3036,18 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   AddressMode: () => (/* binding */ AddressMode),
 /* harmony export */   BlendFactor: () => (/* binding */ BlendFactor),
+/* harmony export */   ColorChannel: () => (/* binding */ ColorChannel),
 /* harmony export */   ColorSpace: () => (/* binding */ ColorSpace),
 /* harmony export */   CompareFunction: () => (/* binding */ CompareFunction),
 /* harmony export */   CullMode: () => (/* binding */ CullMode),
 /* harmony export */   FilterMode: () => (/* binding */ FilterMode),
 /* harmony export */   SamplerType: () => (/* binding */ SamplerType),
+/* harmony export */   ShaderStage: () => (/* binding */ ShaderStage),
 /* harmony export */   StorageAccess: () => (/* binding */ StorageAccess),
+/* harmony export */   TextureDimension: () => (/* binding */ TextureDimension),
 /* harmony export */   TextureFormat: () => (/* binding */ TextureFormat),
-/* harmony export */   TextureSampleType: () => (/* binding */ TextureSampleType)
+/* harmony export */   TextureSampleType: () => (/* binding */ TextureSampleType),
+/* harmony export */   TextureViewDimension: () => (/* binding */ TextureViewDimension)
 /* harmony export */ });
 var ColorSpace;
 (function (ColorSpace) {
@@ -3097,6 +3229,157 @@ var SamplerType;
     SamplerType["NonFiltering"] = "non-filtering";
     SamplerType["Comparison"] = "comparison";
 })(SamplerType || (SamplerType = {}));
+var ColorChannel;
+(function (ColorChannel) {
+    ColorChannel[ColorChannel["Red"] = GPUColorWrite.RED] = "Red";
+    ColorChannel[ColorChannel["Green"] = GPUColorWrite.GREEN] = "Green";
+    ColorChannel[ColorChannel["Blue"] = GPUColorWrite.BLUE] = "Blue";
+})(ColorChannel || (ColorChannel = {}));
+var TextureDimension;
+(function (TextureDimension) {
+    TextureDimension["D1"] = "1d";
+    TextureDimension["D2"] = "2d";
+    TextureDimension["D3"] = "3d";
+})(TextureDimension || (TextureDimension = {}));
+var TextureViewDimension;
+(function (TextureViewDimension) {
+    TextureViewDimension["D1"] = "1d";
+    TextureViewDimension["D2"] = "2d";
+    TextureViewDimension["D2Array"] = "2d-array";
+    TextureViewDimension["Cube"] = "cube";
+    TextureViewDimension["CubeArray"] = "cube-array";
+    TextureViewDimension["D3"] = "3d";
+})(TextureViewDimension || (TextureViewDimension = {}));
+var ShaderStage;
+(function (ShaderStage) {
+    ShaderStage[ShaderStage["Vertex"] = GPUShaderStage.VERTEX] = "Vertex";
+    ShaderStage[ShaderStage["Fragment"] = GPUShaderStage.FRAGMENT] = "Fragment";
+    ShaderStage[ShaderStage["Compute"] = GPUShaderStage.COMPUTE] = "Compute";
+})(ShaderStage || (ShaderStage = {}));
+
+
+/***/ }),
+
+/***/ "./src/utils/MipRenderer.ts":
+/*!**********************************!*\
+  !*** ./src/utils/MipRenderer.ts ***!
+  \**********************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   MipRenderer: () => (/* binding */ MipRenderer)
+/* harmony export */ });
+/* harmony import */ var _enums__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../enums */ "./src/enums.ts");
+/* harmony import */ var _buffers_Buffer__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../buffers/Buffer */ "./src/buffers/Buffer.ts");
+
+
+class MipRenderer {
+    constructor(ctx, shader, texture) {
+        this._bindgroups = [];
+        this._views = [];
+        this._passDescs = [];
+        this._ctx = ctx;
+        const sampler = ctx.device.createSampler({
+            label: "MipRenderer Bilinear Sampler",
+            magFilter: _enums__WEBPACK_IMPORTED_MODULE_0__.FilterMode.Linear,
+            minFilter: _enums__WEBPACK_IMPORTED_MODULE_0__.FilterMode.Linear,
+            mipmapFilter: _enums__WEBPACK_IMPORTED_MODULE_0__.FilterMode.Nearest
+        });
+        this._bindgroupLayout = ctx.device.createBindGroupLayout({
+            label: "MipRenderer BindGroup Layout",
+            entries: [
+                {
+                    binding: 0,
+                    visibility: GPUShaderStage.FRAGMENT,
+                    texture: {
+                        sampleType: "float",
+                        viewDimension: texture.dimension(),
+                        multisampled: false
+                    }
+                },
+                {
+                    binding: 1,
+                    visibility: GPUShaderStage.FRAGMENT,
+                    sampler: {
+                        type: "filtering"
+                    }
+                }
+            ]
+        });
+        this._pipeline = ctx.device.createRenderPipeline({
+            label: "MipRenderer Pipeline",
+            layout: ctx.device.createPipelineLayout({
+                label: "MipRenderer Pipeline Layout",
+                bindGroupLayouts: [this._bindgroupLayout]
+            }),
+            vertex: {
+                module: shader,
+                entryPoint: "vs_main"
+            },
+            fragment: {
+                module: shader,
+                entryPoint: "fs_main",
+                targets: [
+                    {
+                        format: texture.format
+                    }
+                ]
+            },
+            primitive: {
+                topology: "triangle-list",
+                stripIndexFormat: undefined,
+                frontFace: "ccw",
+                cullMode: "none"
+            }
+        });
+        for (let level = 0; level < texture.mipLevelCount; ++level) {
+            this._views.push(texture.createView()
+                .withSingleMip(level)
+                .withUsage(_buffers_Buffer__WEBPACK_IMPORTED_MODULE_1__.TextureUsage.RenderAttachment)
+                .withUsage(_buffers_Buffer__WEBPACK_IMPORTED_MODULE_1__.TextureUsage.TextureBinding)
+                .build()._inner);
+            if (level === 0)
+                continue;
+            this._bindgroups.push(ctx.device.createBindGroup({
+                label: `MipRenderer BindGroup Mip ${level}`,
+                layout: this._bindgroupLayout,
+                entries: [
+                    {
+                        binding: 0,
+                        resource: this._views[level - 1]
+                    },
+                    {
+                        binding: 1,
+                        resource: sampler
+                    }
+                ]
+            }));
+            this._passDescs.push({
+                label: `MipRenderer Render Pass mip ${level}`,
+                colorAttachments: [{
+                        view: this._views[level],
+                        loadOp: 'clear',
+                        storeOp: 'store',
+                        clearValue: { r: 0, g: 0, b: 0, a: 0 }
+                    }]
+            });
+        }
+    }
+    render() {
+        const encoder = this._ctx.device.createCommandEncoder({
+            label: "MipRenderer Command Encoder"
+        });
+        this._passDescs.forEach((desc, level) => {
+            const pass = encoder.beginRenderPass(desc);
+            pass.setPipeline(this._pipeline);
+            pass.setBindGroup(0, this._bindgroups[level]);
+            pass.draw(3, 1, 0, 0);
+            pass.end();
+        });
+        this._ctx.device.queue.submit([encoder.finish()]);
+    }
+}
 
 
 /***/ }),
@@ -3196,6 +3479,16 @@ function padArrayBuffer(input, alignment) {
 }
 
 
+/***/ }),
+
+/***/ "./src/wgsl/mip_2d_2x2.wgsl":
+/*!**********************************!*\
+  !*** ./src/wgsl/mip_2d_2x2.wgsl ***!
+  \**********************************/
+/***/ ((module) => {
+
+module.exports = "@group(0) @binding(0) var source_tex: texture_2d<f32>;\r\n@group(0) @binding(1) var bilinear_sampler: sampler;\r\n\r\nstruct VertexOutput {\r\n    @builtin(position) position: vec4f,\r\n    @location(0) uv: vec2f,\r\n}\r\n\r\n@vertex\r\nfn vs_main(@builtin(vertex_index) i: u32) -> VertexOutput {\r\n    var output: VertexOutput;\r\n\r\n    // Full-screen triangle\r\n    let x = f32((i << 1u) & 2u);\r\n    let y = f32(i & 2u);\r\n\r\n    output.position = vec4f(x * 2.0 - 1.0, 1.0 - y * 2.0, 0.0, 1.0);\r\n    output.uv = vec2f(x, y);\r\n\r\n    return output;\r\n}\r\n\r\n@fragment\r\nfn fs_main(input: VertexOutput) -> @location(0) vec4f {\r\n    return textureSample(source_tex, bilinear_sampler, input.uv);\r\n}\r\n\r\n";
+
 /***/ })
 
 /******/ 	});
@@ -3273,6 +3566,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   BufferBuilder: () => (/* reexport safe */ _buffers_Buffer__WEBPACK_IMPORTED_MODULE_15__.BufferBuilder),
 /* harmony export */   BufferDataWriter: () => (/* reexport safe */ _buffers_BufferDataWriter__WEBPACK_IMPORTED_MODULE_17__.BufferDataWriter),
 /* harmony export */   BufferUsage: () => (/* reexport safe */ _buffers_Buffer__WEBPACK_IMPORTED_MODULE_15__.BufferUsage),
+/* harmony export */   ColorChannel: () => (/* reexport safe */ _enums__WEBPACK_IMPORTED_MODULE_7__.ColorChannel),
 /* harmony export */   ColorSpace: () => (/* reexport safe */ _enums__WEBPACK_IMPORTED_MODULE_7__.ColorSpace),
 /* harmony export */   CommandEncoder: () => (/* reexport safe */ _CommandEncoder__WEBPACK_IMPORTED_MODULE_4__.CommandEncoder),
 /* harmony export */   CompareFunction: () => (/* reexport safe */ _enums__WEBPACK_IMPORTED_MODULE_7__.CompareFunction),
@@ -3298,15 +3592,18 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   SamplerType: () => (/* reexport safe */ _enums__WEBPACK_IMPORTED_MODULE_7__.SamplerType),
 /* harmony export */   Shader: () => (/* reexport safe */ _Shader__WEBPACK_IMPORTED_MODULE_13__.Shader),
 /* harmony export */   ShaderBuilder: () => (/* reexport safe */ _Shader__WEBPACK_IMPORTED_MODULE_13__.ShaderBuilder),
+/* harmony export */   ShaderStage: () => (/* reexport safe */ _enums__WEBPACK_IMPORTED_MODULE_7__.ShaderStage),
 /* harmony export */   StorageAccess: () => (/* reexport safe */ _enums__WEBPACK_IMPORTED_MODULE_7__.StorageAccess),
 /* harmony export */   StreamBuilder: () => (/* reexport safe */ _Mesh__WEBPACK_IMPORTED_MODULE_8__.StreamBuilder),
 /* harmony export */   Texture: () => (/* reexport safe */ _Texture__WEBPACK_IMPORTED_MODULE_14__.Texture),
 /* harmony export */   TextureBuilder: () => (/* reexport safe */ _Texture__WEBPACK_IMPORTED_MODULE_14__.TextureBuilder),
+/* harmony export */   TextureDimension: () => (/* reexport safe */ _enums__WEBPACK_IMPORTED_MODULE_7__.TextureDimension),
 /* harmony export */   TextureFormat: () => (/* reexport safe */ _enums__WEBPACK_IMPORTED_MODULE_7__.TextureFormat),
 /* harmony export */   TextureSampleType: () => (/* reexport safe */ _enums__WEBPACK_IMPORTED_MODULE_7__.TextureSampleType),
 /* harmony export */   TextureUsage: () => (/* reexport safe */ _buffers_Buffer__WEBPACK_IMPORTED_MODULE_15__.TextureUsage),
 /* harmony export */   TextureView: () => (/* reexport safe */ _Texture__WEBPACK_IMPORTED_MODULE_14__.TextureView),
 /* harmony export */   TextureViewBuilder: () => (/* reexport safe */ _Texture__WEBPACK_IMPORTED_MODULE_14__.TextureViewBuilder),
+/* harmony export */   TextureViewDimension: () => (/* reexport safe */ _enums__WEBPACK_IMPORTED_MODULE_7__.TextureViewDimension),
 /* harmony export */   TinyHelix: () => (/* reexport safe */ _TinyHelix__WEBPACK_IMPORTED_MODULE_0__.TinyHelix),
 /* harmony export */   UniformBuffer: () => (/* reexport safe */ _buffers_UniformBuffer__WEBPACK_IMPORTED_MODULE_16__.UniformBuffer),
 /* harmony export */   UniformBufferLayout: () => (/* reexport safe */ _buffers_UniformBuffer__WEBPACK_IMPORTED_MODULE_16__.UniformBufferLayout),

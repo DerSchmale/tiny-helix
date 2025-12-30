@@ -168,3 +168,26 @@ export declare enum SamplerType {
     NonFiltering = "non-filtering",
     Comparison = "comparison"
 }
+export declare enum ColorChannel {
+    Red,
+    Green,
+    Blue
+}
+export declare enum TextureDimension {
+    D1 = "1d",
+    D2 = "2d",
+    D3 = "3d"
+}
+export declare enum TextureViewDimension {
+    D1 = "1d",
+    D2 = "2d",
+    D2Array = "2d-array",
+    Cube = "cube",
+    CubeArray = "cube-array",
+    D3 = "3d"
+}
+export declare enum ShaderStage {
+    Vertex,
+    Fragment,
+    Compute
+}

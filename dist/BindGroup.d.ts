@@ -5,7 +5,7 @@ import { IBuffer } from "./buffers/IBuffer";
 import { Texture, TextureView } from "./Texture";
 import { Sampler } from "./Sampler";
 import { TextureFormat } from "../dist";
-import { SamplerType, StorageAccess, TextureSampleType } from "./enums";
+import { SamplerType, StorageAccess, TextureSampleType, TextureViewDimension } from "./enums";
 /**
  * Lightweight wrapper around a GPUBindGroup.
  * Use {@link TinyHelix.createBindGroup} to create instances.
@@ -109,9 +109,10 @@ declare class BindGroupLayoutBuilder {
      * @param format
      * @param accessMode
      * @param visibility
+     * @param viewDimension
      */
-    withStorageTexture(index: number, fieldName: string, format: TextureFormat, accessMode: StorageAccess, visibility?: GPUShaderStageFlags): this;
-    withTexture(index: number, fieldName: string, sampleType?: TextureSampleType, visibility?: GPUShaderStageFlags): this;
+    withStorageTexture(index: number, fieldName: string, format: TextureFormat, accessMode: StorageAccess, visibility?: GPUShaderStageFlags, viewDimension?: TextureViewDimension): this;
+    withTexture(index: number, fieldName: string, visibility?: GPUShaderStageFlags, viewDimension?: TextureViewDimension, sampleType?: TextureSampleType): this;
     withSampler(index: number, fieldName: string, samplerType?: SamplerType, visibility?: GPUShaderStageFlags): this;
     /**
      * Create the underlying GPUBindGroupLayout and return a wrapped `BindGroupLayout`.

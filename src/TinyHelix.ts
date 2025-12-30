@@ -12,6 +12,7 @@ import {ComputePipelineBuilder} from "./ComputePipeline";
 import {ColorSpace, TextureFormat} from "./enums";
 import {mapUndefined} from "./utils/mapUndefined";
 import {BufferBuilder} from "./buffers/Buffer";
+import mipCode from './wgsl/mip_2d_2x2.wgsl';
 
 /**
  * Options for initializing TinyHelix
@@ -37,6 +38,7 @@ export class TinyHelix {
     private _canvas: HTMLCanvasElement;
     private _globalBindBufferLayouts: BindGroupLayout[] = [];
     private _globalBindBuffers: BindGroup[] = [];
+    private _mipShader!: GPUShaderModule;
 
     /**
      * Create a new TinyHelix instance. Call `initialize()` before rendering.
@@ -58,6 +60,10 @@ export class TinyHelix {
         await this._context.initialize(options);
 
         this._createDepthStencil();
+        this._mipShader = this._context.device.createShaderModule({
+            code: mipCode,
+            label: "MipRenderer Shader Module",
+        });
     }
 
     resize(width: number, height: number) {
@@ -140,7 +146,7 @@ export class TinyHelix {
      * @example tiny.startFrame();
      */
     startFrame() {
-        this._backbuffer = Texture.from_webgpu(this._context.getCurrentTexture(), this._context.format);
+        this._backbuffer = Texture.from_webgpu(this._context.getCurrentTexture(), this._context.format, this._context, this._mipShader);
         this._backbufferTarget = this.createRenderTarget(this._backbuffer)
             .build();
     }
@@ -219,7 +225,7 @@ export class TinyHelix {
      */
     createTexture(): TextureBuilder
     {
-        return new TextureBuilder(this._context)
+        return new TextureBuilder(this._context, this._mipShader)
     }
 
     /**

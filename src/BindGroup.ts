@@ -5,7 +5,7 @@ import {mapUndefined} from "./utils/mapUndefined";
 import {Texture, TextureView} from "./Texture";
 import {Sampler} from "./Sampler";
 import {TextureFormat} from "../dist";
-import {SamplerType, StorageAccess, TextureSampleType} from "./enums";
+import {SamplerType, ShaderStage, StorageAccess, TextureSampleType, TextureViewDimension} from "./enums";
 
 /**
  * Lightweight wrapper around a GPUBindGroup.
@@ -67,7 +67,7 @@ export class BindGroupBuilder {
     withTexture(fieldName: string, texture: Texture | TextureView): this {
         const index = this._layout._getBindingIndex(fieldName);
         this._entries[index] = {
-            binding: index, resource: texture._inner
+            binding: index, resource: texture._inner,
         };
         return this;
     }
@@ -171,7 +171,7 @@ class BindGroupLayoutBuilder {
     withUniformBuffer(index: number, field_name: string, layout: UniformBufferLayout, visibility?: GPUShaderStageFlags): this {
         this._entries[index] = {
             binding: index,
-            visibility: visibility ?? GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE,
+            visibility: visibility ?? ShaderStage.Vertex | ShaderStage.Fragment | ShaderStage.Compute,
             buffer: {type: 'uniform'}
         };
         this._indices.set(field_name, index);
@@ -195,7 +195,7 @@ class BindGroupLayoutBuilder {
 
         this._entries[index] = {
             binding: index,
-            visibility: visibility ?? GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE,
+            visibility: visibility ?? ShaderStage.Fragment | ShaderStage.Compute,
             buffer: {type, hasDynamicOffset: false, minBindingSize: 4}
         };
         this._indices.set(fieldName, index);
@@ -210,22 +210,30 @@ class BindGroupLayoutBuilder {
      * @param format
      * @param accessMode
      * @param visibility
+     * @param viewDimension
      */
-    withStorageTexture(index: number, fieldName: string, format: TextureFormat, accessMode: StorageAccess, visibility?: GPUShaderStageFlags): this {
+    withStorageTexture(index: number, fieldName: string, format: TextureFormat, accessMode: StorageAccess, visibility?: GPUShaderStageFlags, viewDimension?: TextureViewDimension): this {
         this._entries[index] = {
             binding: index,
-            visibility: visibility ?? GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE,
-            storageTexture: {access: accessMode, format}
+            visibility: visibility ?? ShaderStage.Fragment | ShaderStage.Compute,
+            storageTexture: {
+                access: accessMode,
+                format,
+                viewDimension: viewDimension ?? "2d"
+            }
         };
         this._indices.set(fieldName, index);
         return this;
     }
 
-    withTexture(index: number, fieldName: string, sampleType: TextureSampleType = TextureSampleType.Float, visibility?: GPUShaderStageFlags): this {
+    withTexture(index: number, fieldName: string, visibility?: GPUShaderStageFlags, viewDimension?: TextureViewDimension, sampleType: TextureSampleType = TextureSampleType.Float): this {
         this._entries[index] = {
             binding: index,
-            visibility: visibility ?? GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE,
-            texture: {sampleType}
+            visibility: visibility ?? ShaderStage.Fragment | ShaderStage.Compute,
+            texture: {
+                sampleType,
+                viewDimension: viewDimension ?? "2d"
+            }
         };
         this._indices.set(fieldName, index);
         return this;
@@ -234,7 +242,7 @@ class BindGroupLayoutBuilder {
     withSampler(index: number, fieldName: string, samplerType: SamplerType = SamplerType.Filtering, visibility?: GPUShaderStageFlags): this {
         this._entries[index] = {
             binding: index,
-            visibility: visibility ?? GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE,
+            visibility: visibility ?? ShaderStage.Fragment | ShaderStage.Compute,
             sampler: {type: samplerType}
         };
         this._indices.set(fieldName, index);

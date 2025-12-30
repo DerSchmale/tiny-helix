@@ -1,6 +1,6 @@
 /// <reference types="@webgpu/types" />
 import { WebGPUContext } from "./WebGPUContext";
-import { TextureFormat } from "./enums";
+import { TextureDimension, TextureFormat, TextureViewDimension } from "./enums";
 import { IBuffer } from "./buffers/IBuffer";
 import { TextureUsage } from "./buffers/Buffer";
 /**
@@ -11,27 +11,43 @@ export declare class Texture implements IBuffer {
     /** @internal */
     readonly _inner: GPUTexture;
     private _format;
+    private _ctx;
+    private _mipper?;
     /**
-     * Create a Texture wrapper from an existing GPUTexture.
-     * @param texture - The underlying GPUTexture
+     * @internal
      */
-    static from_webgpu(texture: GPUTexture, format: TextureFormat): Texture;
-    constructor(inner: GPUTexture, format: TextureFormat);
+    static from_webgpu(texture: GPUTexture, format: TextureFormat, ctx: WebGPUContext, mipShader: GPUShaderModule): Texture;
+    constructor(inner: GPUTexture, format: TextureFormat, ctx: WebGPUContext, mipShader?: GPUShaderModule);
     createView(): TextureViewBuilder;
     get format(): TextureFormat;
+    get mipLevelCount(): number;
+    get width(): number;
+    get height(): number;
+    get depthOrArrayLayers(): number;
     _getBufferResource(): GPUBindingResource;
+    uploadImage(data: ImageBitmap, mipLevel?: number): void;
+    uploadData(data: GPUAllowSharedBufferSource, mipLevel?: number): void;
+    generateMipmaps(): void;
+    dimension(): TextureDimension;
 }
 export declare class TextureBuilder {
     private _ctx;
     private _size;
-    private _data;
+    private _data?;
     private _format;
     private _usage;
-    constructor(ctx: WebGPUContext);
+    private _dimension;
+    private _mipLevelCount;
+    private _generateMips;
+    private _mipShader;
+    constructor(ctx: WebGPUContext, mipShader: GPUShaderModule);
     withSize(width: number, height: number, depthOrArrayLayers?: number): this;
-    withData(data: GPUAllowSharedBufferSource): this;
+    withDimension(dim: TextureDimension): this;
+    withMipLevels(count?: number): this;
     withFormat(format: TextureFormat): this;
-    withImage(data: ImageBitmap): this;
+    withData(data: GPUAllowSharedBufferSource, mipLevel?: number): this;
+    withImage(data: ImageBitmap, mipLevel?: number): this;
+    withGeneratedMipmaps(): this;
     withUsage(usage: TextureUsage): this;
     build(): Texture;
 }
@@ -47,9 +63,11 @@ export declare class TextureViewBuilder {
      * @internal
      */
     constructor(texture: Texture);
+    withUsage(usage: TextureUsage): this;
     withSingleMip(level: number): this;
     withMipRange(start: number, end: number): this;
     withSingleLayer(layer: number): this;
     withLayerRange(start: number, end: number): this;
+    withDimension(dim: TextureViewDimension): this;
     build(): TextureView;
 }

@@ -68,6 +68,8 @@ export declare class RenderPipelineBuilder {
     withOverrideConstant(id: string, value: number): this;
     /** Set the blend mode for the last assigned (or default) color target. */
     withBlendMode(blendMode: BlendMode): this;
+    /** Set the color write mask for the last assigned (or default) color target. */
+    withColorWrite(r: boolean, g?: boolean, b?: boolean, a?: boolean): this;
     /**
      * Build and create the `RenderPipeline`. Throws if required pieces (shader/vertices)
      * are missing.

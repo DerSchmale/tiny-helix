@@ -177,3 +177,30 @@ export enum SamplerType {
     NonFiltering = "non-filtering",
     Comparison = "comparison",
 }
+
+export enum ColorChannel {
+    Red = GPUColorWrite.RED,
+    Green = GPUColorWrite.GREEN,
+    Blue = GPUColorWrite.BLUE
+}
+
+export enum TextureDimension {
+    D1 = "1d",
+    D2 = "2d",
+    D3 = "3d"
+}
+
+export enum TextureViewDimension {
+    D1 = "1d",
+    D2 = "2d",
+    D2Array = "2d-array",
+    Cube = "cube",
+    CubeArray = "cube-array",
+    D3 = "3d"
+}
+
+export enum ShaderStage {
+    Vertex = GPUShaderStage.VERTEX,
+    Fragment = GPUShaderStage.FRAGMENT,
+    Compute = GPUShaderStage.COMPUTE
+}

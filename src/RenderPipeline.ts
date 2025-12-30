@@ -158,6 +158,20 @@ export class RenderPipelineBuilder {
         return this;
     }
 
+    /** Set the color write mask for the last assigned (or default) color target. */
+    withColorWrite(r: boolean, g?: boolean, b?: boolean, a?: boolean): this {
+        g ??= r;
+        b ??= g;
+        a ??= b;
+
+        this.lastColorTarget.writeMask =
+            (r ? GPUColorWrite.RED : 0) |
+            (g ? GPUColorWrite.GREEN : 0) |
+            (b ? GPUColorWrite.BLUE : 0) |
+            (a ? GPUColorWrite.ALPHA : 0);
+        return this;
+    }
+
     /**
      * Build and create the `RenderPipeline`. Throws if required pieces (shader/vertices)
      * are missing.

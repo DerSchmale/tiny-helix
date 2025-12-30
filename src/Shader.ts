@@ -99,7 +99,7 @@ export class ShaderBuilder {
     }
 
     /** Declare a named vertex attribute and the location it maps to in the shader. */
-    withVertexAttribute(name: string, location: number): this {
+    withVertexAttribute(location: number, name: string): this {
         this._vertexAttributes.set(name, location);
         return this;
     }

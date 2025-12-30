@@ -25,6 +25,8 @@ module.exports = [
           use: 'ts-loader',
           exclude: /node_modules/,
         },
+        // Add support for importing .wgsl files as raw strings
+        { test: /\.wgsl$/i, type: 'asset/source' },
       ],
     },
     devtool: 'source-map',
@@ -53,6 +55,8 @@ module.exports = [
           use: 'ts-loader',
           exclude: /node_modules/,
         },
+        // Add support for importing .wgsl files as raw strings
+        { test: /\.wgsl$/i, type: 'asset/source' },
       ],
     },
     devtool: 'source-map',
@@ -81,6 +85,8 @@ module.exports = [
           use: 'ts-loader',
           exclude: /node_modules/,
         },
+        // Add support for importing .wgsl files as raw strings
+        { test: /\.wgsl$/i, type: 'asset/source' },
       ],
     },
     optimization: {
@@ -113,6 +119,8 @@ module.exports = [
           use: 'ts-loader',
           exclude: /node_modules/,
         },
+        // Add support for importing .wgsl files as raw strings
+        { test: /\.wgsl$/i, type: 'asset/source' },
       ],
     },
     optimization: {

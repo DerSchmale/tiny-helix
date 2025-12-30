@@ -64,7 +64,7 @@ export declare class ShaderBuilder {
      */
     withInclude(name: string, code: string): this;
     /** Declare a named vertex attribute and the location it maps to in the shader. */
-    withVertexAttribute(name: string, location: number): this;
+    withVertexAttribute(location: number, name: string): this;
     /**
      * Declare a bind group layout used by this shader. The provided builder
      * callback is used to construct the layout description.
