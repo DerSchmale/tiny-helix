@@ -64,7 +64,7 @@ export class BindGroupBuilder {
     }
 
     /** Attach a texture to the bind group. */
-    withTexture(fieldName: string, texture: Texture | TextureView): this {
+    withTexture(fieldName: string, texture: TextureView): this {
         const index = this._layout._getBindingIndex(fieldName);
         this._entries[index] = {
             binding: index, resource: texture._inner,

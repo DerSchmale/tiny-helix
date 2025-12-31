@@ -146,8 +146,9 @@ export class TinyHelix {
      * @example tiny.startFrame();
      */
     startFrame() {
-        this._backbuffer = Texture.from_webgpu(this._context.getCurrentTexture(), this._context.format, this._context, this._mipShader);
+        this._backbuffer = Texture.from_webgpu(this._context.getCurrentTexture(), this._context.format, this._context);
         this._backbufferTarget = this.createRenderTarget(this._backbuffer)
+            .withMipLevel(0)
             .build();
     }
 

@@ -1319,16 +1319,17 @@ class RenderTargetBuilder {
      */
     build() {
         const tex = this._texture._inner;
-        const desc = {
+        const view = this._texture._inner.createView({
             format: tex.format,
             dimension: tex.dimension,
             aspect: 'all',
             baseMipLevel: this._baseMipLevel,
             mipLevelCount: 1,
             baseArrayLayer: this._baseArrayLayer,
-            arrayLayerCount: 1
-        };
-        return new RenderTarget(this._texture._inner.createView(desc), this._texture.format);
+            arrayLayerCount: 1,
+            usage: GPUTextureUsage.RENDER_ATTACHMENT,
+        });
+        return new RenderTarget(view, this._texture.format);
     }
 }
 
@@ -1355,18 +1356,23 @@ class Sampler {
 }
 class SamplerBuilder {
     constructor(ctx) {
+        this._desc = {};
         this._ctx = ctx;
     }
+    withLabel(label) {
+        this._desc.label = label;
+        return this;
+    }
     withAddressMode(u, v, w) {
-        this._addressModeU = u;
-        this._addressModeV = v ?? u;
-        this._addressModeW = w ?? u;
+        this._desc.addressModeU = u;
+        this._desc.addressModeV = v ?? u;
+        this._desc.addressModeW = w ?? u;
         return this;
     }
     withFiltering(minFilter, magFilter, mipmapFilter) {
-        this._minFilter = minFilter;
-        this._magFilter = magFilter ?? minFilter;
-        this._mipmapFilter = mipmapFilter ?? minFilter;
+        this._desc.minFilter = minFilter;
+        this._desc.magFilter = magFilter ?? minFilter;
+        this._desc.mipmapFilter = mipmapFilter ?? minFilter;
         return this;
     }
     withTrilinearFiltering() {
@@ -1379,34 +1385,23 @@ class SamplerBuilder {
     }
     withAnisotropicFiltering(maxAnisotropy) {
         this.withFiltering(_enums__WEBPACK_IMPORTED_MODULE_0__.FilterMode.Linear);
-        this._maxAnisotropy = maxAnisotropy;
+        this._desc.maxAnisotropy = maxAnisotropy;
         return this;
     }
     withMinMipLevel(level) {
-        this._minMipLevel = level;
+        this._desc.lodMinClamp = level;
         return this;
     }
     withMaxMipLevel(level) {
-        this._maxMipLevel = level;
+        this._desc.lodMaxClamp = level;
         return this;
     }
     withCompareFunction(compare) {
-        this._compare = compare;
+        this._desc.compare = compare;
         return this;
     }
     build() {
-        return new Sampler(this._ctx.device.createSampler({
-            addressModeU: this._addressModeU,
-            addressModeV: this._addressModeV,
-            addressModeW: this._addressModeW,
-            magFilter: this._magFilter,
-            minFilter: this._minFilter,
-            mipmapFilter: this._mipmapFilter,
-            lodMinClamp: this._minMipLevel,
-            lodMaxClamp: this._maxMipLevel,
-            compare: this._compare,
-            maxAnisotropy: this._maxAnisotropy
-        }));
+        return new Sampler(this._ctx.device.createSampler(this._desc));
     }
 }
 
@@ -2120,8 +2115,9 @@ class TinyHelix {
      * @example tiny.startFrame();
      */
     startFrame() {
-        this._backbuffer = _Texture__WEBPACK_IMPORTED_MODULE_2__.Texture.from_webgpu(this._context.getCurrentTexture(), this._context.format, this._context, this._mipShader);
+        this._backbuffer = _Texture__WEBPACK_IMPORTED_MODULE_2__.Texture.from_webgpu(this._context.getCurrentTexture(), this._context.format, this._context);
         this._backbufferTarget = this.createRenderTarget(this._backbuffer)
+            .withMipLevel(0)
             .build();
     }
     /**

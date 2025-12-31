@@ -63,15 +63,16 @@ export class RenderTargetBuilder {
      */
     build(): RenderTarget {
         const tex = this._texture._inner;
-        const desc: GPUTextureViewDescriptor = {
+        const view = this._texture._inner.createView({
             format: tex.format,
             dimension: tex.dimension,
             aspect: 'all',
             baseMipLevel: this._baseMipLevel,
             mipLevelCount: 1,
             baseArrayLayer: this._baseArrayLayer,
-            arrayLayerCount: 1
-        }
-        return new RenderTarget(this._texture._inner.createView(desc), this._texture.format);
+            arrayLayerCount: 1,
+            usage: GPUTextureUsage.RENDER_ATTACHMENT,
+        });
+        return new RenderTarget(view, this._texture.format);
     }
 }

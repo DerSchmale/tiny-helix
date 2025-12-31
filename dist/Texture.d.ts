@@ -16,7 +16,7 @@ export declare class Texture implements IBuffer {
     /**
      * @internal
      */
-    static from_webgpu(texture: GPUTexture, format: TextureFormat, ctx: WebGPUContext, mipShader: GPUShaderModule): Texture;
+    static from_webgpu(texture: GPUTexture, format: TextureFormat, ctx: WebGPUContext, mipShader?: GPUShaderModule): Texture;
     constructor(inner: GPUTexture, format: TextureFormat, ctx: WebGPUContext, mipShader?: GPUShaderModule);
     createView(): TextureViewBuilder;
     get format(): TextureFormat;

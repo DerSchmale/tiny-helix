@@ -19,7 +19,7 @@ export class Texture implements IBuffer {
     /**
      * @internal
      */
-    static from_webgpu(texture: GPUTexture, format: TextureFormat, ctx: WebGPUContext, mipShader: GPUShaderModule): Texture {
+    static from_webgpu(texture: GPUTexture, format: TextureFormat, ctx: WebGPUContext, mipShader?: GPUShaderModule): Texture {
         return new Texture(texture, format, ctx, mipShader);
     }
 
