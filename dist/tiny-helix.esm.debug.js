@@ -454,10 +454,15 @@ class ComputePipeline {
 }
 class ComputePipelineBuilder {
     constructor(ctx) {
+        this._overrideConstants = {};
         this._ctx = ctx;
     }
     withLabel(label) {
         this._label = label;
+        return this;
+    }
+    withOverrideConstant(id, value) {
+        this._overrideConstants[id] = value;
         return this;
     }
     /** Select the shader entry point for the fragment stage. */
@@ -476,7 +481,8 @@ class ComputePipelineBuilder {
             label: this._label,
             compute: {
                 module: shader._inner,
-                entryPoint: this._entry
+                entryPoint: this._entry,
+                constants: this._overrideConstants
             },
             layout
         };
@@ -1144,9 +1150,19 @@ class RenderPipelineBuilder {
         }
         return this;
     }
-    /** Override a shader constant for specialization. */
-    withOverrideConstant(id, value) {
-        this._overrideConstants[id] = value;
+    /**
+     * Override a shader constant for specialization. We do NOT use `ShaderStage.Vertex | ShaderStage.Fragment` as
+     * default because some browser implementations (as of early 2026) have bugs when a non-existent constant is defined
+     */
+    withOverrideConstant(id, value, pipeline) {
+        if (pipeline & GPUShaderStage.VERTEX) {
+            this._overrideConstants[_enums__WEBPACK_IMPORTED_MODULE_1__.ShaderStage.Vertex] = this._overrideConstants[_enums__WEBPACK_IMPORTED_MODULE_1__.ShaderStage.Vertex] || {};
+            this._overrideConstants[_enums__WEBPACK_IMPORTED_MODULE_1__.ShaderStage.Vertex][id] = value;
+        }
+        if (pipeline & GPUShaderStage.FRAGMENT) {
+            this._overrideConstants[_enums__WEBPACK_IMPORTED_MODULE_1__.ShaderStage.Fragment] = this._overrideConstants[_enums__WEBPACK_IMPORTED_MODULE_1__.ShaderStage.Fragment] || {};
+            this._overrideConstants[_enums__WEBPACK_IMPORTED_MODULE_1__.ShaderStage.Fragment][id] = value;
+        }
         return this;
     }
     /** Set the blend mode for the last assigned (or default) color target. */
@@ -1225,13 +1241,13 @@ class RenderPipelineBuilder {
                 buffers,
                 module: shader._inner,
                 entryPoint: this._vertexEntry,
-                constants: this._overrideConstants
+                constants: this._overrideConstants[_enums__WEBPACK_IMPORTED_MODULE_1__.ShaderStage.Vertex]
             },
             fragment: (0,_utils_mapUndefined__WEBPACK_IMPORTED_MODULE_0__.mapUndefined)(this._fragmentEntry, entry => ({
                 module: shader._inner,
                 entryPoint: entry,
                 targets: colorTargets,
-                constants: this._overrideConstants
+                constants: this._overrideConstants[_enums__WEBPACK_IMPORTED_MODULE_1__.ShaderStage.Fragment]
             }))
         };
         const inner = this._ctx.device.createRenderPipeline(desc);

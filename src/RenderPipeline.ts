@@ -2,7 +2,7 @@ import {Shader} from "./Shader";
 import {mapUndefined} from "./utils/mapUndefined";
 import {WebGPUContext} from "./WebGPUContext";
 import {Mesh} from "./Mesh";
-import {CompareFunction, CullMode, TextureFormat} from "./enums";
+import {CompareFunction, CullMode, ShaderStage, TextureFormat} from "./enums";
 import {BlendMode} from "./BlendMode";
 
 /**
@@ -41,7 +41,7 @@ export class RenderPipelineBuilder {
     private _vertexEntry: string | undefined = undefined;
     private _fragmentEntry: string | undefined = undefined;
     private _label: string | undefined = undefined;
-    private _overrideConstants: Record<string, number> = {};
+    private _overrideConstants: Record<ShaderStage, Record<string, number>> = {};
     private _cullMode: CullMode = CullMode.Back;
     private _mesh: Mesh | undefined = undefined;
 
@@ -146,9 +146,19 @@ export class RenderPipelineBuilder {
         return this;
     }
 
-    /** Override a shader constant for specialization. */
-    withOverrideConstant(id: string, value: number): this {
-        this._overrideConstants[id] = value;
+    /**
+     * Override a shader constant for specialization. We do NOT use `ShaderStage.Vertex | ShaderStage.Fragment` as
+     * default because some browser implementations (as of early 2026) have bugs when a non-existent constant is defined
+     */
+    withOverrideConstant(id: string, value: number, pipeline: GPUShaderStageFlags): this {
+        if (pipeline & GPUShaderStage.VERTEX) {
+            this._overrideConstants[ShaderStage.Vertex] = this._overrideConstants[ShaderStage.Vertex] || {};
+            this._overrideConstants[ShaderStage.Vertex][id] = value;
+        }
+        if (pipeline & GPUShaderStage.FRAGMENT) {
+            this._overrideConstants[ShaderStage.Fragment] = this._overrideConstants[ShaderStage.Fragment] || {};
+            this._overrideConstants[ShaderStage.Fragment][id] = value;
+        }
         return this;
     }
 
@@ -243,13 +253,13 @@ export class RenderPipelineBuilder {
                 buffers,
                 module: shader._inner,
                 entryPoint: this._vertexEntry!,
-                constants: this._overrideConstants
+                constants: this._overrideConstants[ShaderStage.Vertex]
             },
             fragment: mapUndefined(this._fragmentEntry, entry => ({
                 module: shader._inner,
                 entryPoint: entry,
                 targets: colorTargets,
-                constants: this._overrideConstants
+                constants: this._overrideConstants[ShaderStage.Fragment]
             }))
         }
 

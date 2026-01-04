@@ -64,8 +64,11 @@ export declare class RenderPipelineBuilder {
      * @param enabled
      */
     withDepthWrite(enabled: boolean): this;
-    /** Override a shader constant for specialization. */
-    withOverrideConstant(id: string, value: number): this;
+    /**
+     * Override a shader constant for specialization. We do NOT use `ShaderStage.Vertex | ShaderStage.Fragment` as
+     * default because some browser implementations (as of early 2026) have bugs when a non-existent constant is defined
+     */
+    withOverrideConstant(id: string, value: number, pipeline: GPUShaderStageFlags): this;
     /** Set the blend mode for the last assigned (or default) color target. */
     withBlendMode(blendMode: BlendMode): this;
     /** Set the color write mask for the last assigned (or default) color target. */

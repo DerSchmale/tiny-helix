@@ -16,6 +16,7 @@ export class ComputePipelineBuilder {
     private _label?: string;
     private _shader!: Shader;
     private _entry!: string;
+    private _overrideConstants: Record<string, number> = {};
 
     constructor(ctx: WebGPUContext) {
         this._ctx = ctx;
@@ -24,6 +25,11 @@ export class ComputePipelineBuilder {
     withLabel(label: string): this
     {
         this._label = label;
+        return this;
+    }
+
+    withOverrideConstant(id: string, value: number): this {
+        this._overrideConstants[id] = value;
         return this;
     }
 
@@ -48,7 +54,8 @@ export class ComputePipelineBuilder {
             label: this._label,
             compute: {
                 module: shader._inner,
-                entryPoint: this._entry
+                entryPoint: this._entry,
+                constants: this._overrideConstants
             },
             layout
         };

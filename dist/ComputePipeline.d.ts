@@ -10,8 +10,10 @@ export declare class ComputePipelineBuilder {
     private _label?;
     private _shader;
     private _entry;
+    private _overrideConstants;
     constructor(ctx: WebGPUContext);
     withLabel(label: string): this;
+    withOverrideConstant(id: string, value: number): this;
     /** Select the shader entry point for the fragment stage. */
     withShader(shader: Shader, entry: string): this;
     build(): ComputePipeline;
