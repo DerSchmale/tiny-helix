@@ -1622,7 +1622,10 @@ class Texture {
         const blockWidth = getBlockWidth(this._format);
         const blocksPerRow = Math.ceil(width / blockWidth);
         const bytesPerRow = blocksPerRow * bytesPerBlock(this._format);
-        this._ctx.device.queue.writeTexture({ texture: this._inner, mipLevel }, data, { bytesPerRow }, { width, height, depthOrArrayLayers });
+        this._ctx.device.queue.writeTexture({ texture: this._inner, mipLevel }, data, {
+            bytesPerRow,
+            rowsPerImage: height // This is what Mario is asking for!
+        }, { width, height, depthOrArrayLayers });
     }
     generateMipmaps() {
         if (this._inner.dimension !== _enums__WEBPACK_IMPORTED_MODULE_0__.TextureDimension.D2) {

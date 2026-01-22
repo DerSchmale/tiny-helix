@@ -2,6 +2,7 @@ import {TinyHelix} from "./TinyHelix";
 import {WebGPUContext} from "./WebGPUContext";
 import {Shader} from "./Shader";
 import {mapUndefined} from "./utils/mapUndefined";
+import {MeshTopology} from "./Mesh";
 
 export class ComputePipeline {
     readonly _inner: GPUComputePipeline;

@@ -73,7 +73,10 @@ export class Texture implements IBuffer {
         this._ctx.device.queue.writeTexture(
             {texture: this._inner, mipLevel},
             data,
-            {bytesPerRow},
+            {
+                bytesPerRow,
+                rowsPerImage: height    // This is what Mario is asking for!
+            },
             {width, height, depthOrArrayLayers}
         );
     }
