@@ -100,7 +100,7 @@ declare class BindGroupLayoutBuilder {
      * @param accessMode - Defines whether the storage buffer is read-only or not.
      * @param visibility - shader stage visibility flags (defaults to FRAGMENT|COMPUTE)
      */
-    withStorageBuffer(index: number, fieldName: string, accessMode: StorageAccess, visibility?: GPUShaderStageFlags): this;
+    withStorageBuffer(index: number, fieldName: string, accessMode: StorageAccess, minBindingSize?: number, visibility?: GPUShaderStageFlags): this;
     /**
      * Add a storage texture binding at the given index. The texture will be
      * write-only and use RGBA8Unorm format.

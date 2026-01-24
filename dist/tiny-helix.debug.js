@@ -177,7 +177,7 @@ class BindGroupLayoutBuilder {
      * @param accessMode - Defines whether the storage buffer is read-only or not.
      * @param visibility - shader stage visibility flags (defaults to FRAGMENT|COMPUTE)
      */
-    withStorageBuffer(index, fieldName, accessMode, visibility) {
+    withStorageBuffer(index, fieldName, accessMode, minBindingSize = 4, visibility) {
         let type = "storage";
         if (accessMode === _enums__WEBPACK_IMPORTED_MODULE_2__.StorageAccess.Read) {
             type = "read-only-storage";
@@ -185,7 +185,7 @@ class BindGroupLayoutBuilder {
         this._entries[index] = {
             binding: index,
             visibility: visibility ?? _enums__WEBPACK_IMPORTED_MODULE_2__.ShaderStage.Fragment | _enums__WEBPACK_IMPORTED_MODULE_2__.ShaderStage.Compute,
-            buffer: { type, hasDynamicOffset: false, minBindingSize: 4 }
+            buffer: { type, hasDynamicOffset: false, minBindingSize }
         };
         this._indices.set(fieldName, index);
         return this;

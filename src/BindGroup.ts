@@ -186,7 +186,7 @@ class BindGroupLayoutBuilder {
      * @param accessMode - Defines whether the storage buffer is read-only or not.
      * @param visibility - shader stage visibility flags (defaults to FRAGMENT|COMPUTE)
      */
-    withStorageBuffer(index: number, fieldName: string, accessMode: StorageAccess, visibility?: GPUShaderStageFlags): this {
+    withStorageBuffer(index: number, fieldName: string, accessMode: StorageAccess, minBindingSize: number = 4, visibility?: GPUShaderStageFlags): this {
         let type: GPUBufferBindingType = "storage";
 
         if (accessMode === StorageAccess.Read) {
@@ -196,7 +196,7 @@ class BindGroupLayoutBuilder {
         this._entries[index] = {
             binding: index,
             visibility: visibility ?? ShaderStage.Fragment | ShaderStage.Compute,
-            buffer: {type, hasDynamicOffset: false, minBindingSize: 4}
+            buffer: {type, hasDynamicOffset: false, minBindingSize}
         };
         this._indices.set(fieldName, index);
         return this;
