@@ -1565,6 +1565,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   Texture: () => (/* binding */ Texture),
 /* harmony export */   TextureBuilder: () => (/* binding */ TextureBuilder),
+/* harmony export */   TextureUtils: () => (/* binding */ TextureUtils),
 /* harmony export */   TextureView: () => (/* binding */ TextureView),
 /* harmony export */   TextureViewBuilder: () => (/* binding */ TextureViewBuilder)
 /* harmony export */ });
@@ -1619,9 +1620,9 @@ class Texture {
         const width = Math.max(this._inner.width >> mipLevel, 1);
         const height = Math.max(this._inner.height >> mipLevel, 1);
         const depthOrArrayLayers = Math.max(this._inner.depthOrArrayLayers >> mipLevel, 1);
-        const blockWidth = getBlockWidth(this._format);
+        const blockWidth = TextureUtils.getBlockWidth(this._format);
         const blocksPerRow = Math.ceil(width / blockWidth);
-        const bytesPerRow = blocksPerRow * bytesPerBlock(this._format);
+        const bytesPerRow = blocksPerRow * TextureUtils.bytesPerBlock(this._format);
         this._ctx.device.queue.writeTexture({ texture: this._inner, mipLevel }, data, {
             bytesPerRow,
             rowsPerImage: height // This is what Mario is asking for!
@@ -1786,209 +1787,211 @@ class TextureViewBuilder {
         return new TextureView(this._texture._inner.createView(this._desc));
     }
 }
-function isBc(format) {
-    switch (format) {
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc1RgbaUnorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc1RgbaUnormSrgb:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc2RgbaUnorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc2RgbaUnormSrgb:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc3RgbaUnorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc3RgbaUnormSrgb:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc4RUnorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc4RSnorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc5RgUnorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc5RgSnorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc6hRgbUfloat:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc6hRgbFloat:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc7RgbaUnorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc7RgbaUnormSrgb:
-            return true;
-        default:
-            return false;
+class TextureUtils {
+    static isBc(format) {
+        switch (format) {
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc1RgbaUnorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc1RgbaUnormSrgb:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc2RgbaUnorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc2RgbaUnormSrgb:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc3RgbaUnorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc3RgbaUnormSrgb:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc4RUnorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc4RSnorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc5RgUnorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc5RgSnorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc6hRgbUfloat:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc6hRgbFloat:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc7RgbaUnorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc7RgbaUnormSrgb:
+                return true;
+            default:
+                return false;
+        }
     }
-}
-function isEtc(format) {
-    switch (format) {
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Etc2Rgb8Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Etc2Rgb8UnormSrgb:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Etc2Rgb8A1Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Etc2Rgb8A1UnormSrgb:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Etc2Rgba8Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Etc2Rgba8UnormSrgb:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.EacR11Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.EacR11Snorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.EacRg11Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.EacRg11Snorm:
-            return true;
-        default:
-            return false;
+    static isEtc(format) {
+        switch (format) {
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Etc2Rgb8Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Etc2Rgb8UnormSrgb:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Etc2Rgb8A1Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Etc2Rgb8A1UnormSrgb:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Etc2Rgba8Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Etc2Rgba8UnormSrgb:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.EacR11Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.EacR11Snorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.EacRg11Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.EacRg11Snorm:
+                return true;
+            default:
+                return false;
+        }
     }
-}
-function getBlockWidth(format) {
-    if (isBc(format) || isEtc(format))
-        return 4;
-    switch (format) {
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc4x4Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc4x4UnormSrgb:
+    static getBlockWidth(format) {
+        if (TextureUtils.isBc(format) || TextureUtils.isEtc(format))
             return 4;
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc5x4Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc5x4UnormSrgb:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc5x5Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc5x5UnormSrgb:
-            return 5;
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc6x5Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc6x5UnormSrgb:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc6x6Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc6x6UnormSrgb:
-            return 6;
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc8x5Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc8x5UnormSrgb:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc8x6Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc8x6UnormSrgb:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc8x8Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc8x8UnormSrgb:
-            return 8;
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc10x5Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc10x5UnormSrgb:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc10x6Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc10x6UnormSrgb:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc10x8Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc10x8UnormSrgb:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc10x10Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc10x10UnormSrgb:
-            return 10;
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc12x10Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc12x10UnormSrgb:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc12x12Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc12x12UnormSrgb:
-            return 12;
-        default:
-            return 1;
+        switch (format) {
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc4x4Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc4x4UnormSrgb:
+                return 4;
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc5x4Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc5x4UnormSrgb:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc5x5Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc5x5UnormSrgb:
+                return 5;
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc6x5Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc6x5UnormSrgb:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc6x6Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc6x6UnormSrgb:
+                return 6;
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc8x5Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc8x5UnormSrgb:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc8x6Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc8x6UnormSrgb:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc8x8Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc8x8UnormSrgb:
+                return 8;
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc10x5Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc10x5UnormSrgb:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc10x6Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc10x6UnormSrgb:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc10x8Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc10x8UnormSrgb:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc10x10Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc10x10UnormSrgb:
+                return 10;
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc12x10Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc12x10UnormSrgb:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc12x12Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc12x12UnormSrgb:
+                return 12;
+            default:
+                return 1;
+        }
     }
-}
-/**
- * Returns the number of bytes in a compressed or uncompressed block for the
- * given texture format. Matches the mapping from the Rust implementation and
- * throws for unsupported formats.
- */
-function bytesPerBlock(format) {
-    switch (format) {
-        // 1-byte formats
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.R8Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.R8Snorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.R8Uint:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.R8Sint:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Stencil8:
-            return 1;
-        // 2-byte formats
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.R16Uint:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.R16Sint:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.R16Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.R16Snorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.R16Float:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.RG8Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.RG8Snorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.RG8Uint:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.RG8Sint:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Depth16Unorm:
-            return 2;
-        // 4-byte formats
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.R32Uint:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.R32Sint:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.R32Float:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.RG16Uint:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.RG16Sint:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.RG16Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.RG16Snorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.RG16Float:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Rgba8Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Rgba8UnormSrgb:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Rgba8Snorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Rgba8Uint:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Rgba8Sint:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bgra8Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bgra8UnormSrgb:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Rgb9e5Ufloat:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Rgb10a2Uint:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Rgb10a2Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Depth24Plus:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Depth24PlusStencil8:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Depth32Float:
-            return 4;
-        // 8-byte formats
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Rg11b10Ufloat:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.RG32Uint:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.RG32Sint:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.RG32Float:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Rgba16Uint:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Rgba16Sint:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Rgba16Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Rgba16Snorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Rgba16Float:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Depth32FloatStencil8:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc1RgbaUnorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc1RgbaUnormSrgb:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc4RUnorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc4RSnorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Etc2Rgb8Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Etc2Rgb8UnormSrgb:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Etc2Rgb8A1Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Etc2Rgb8A1UnormSrgb:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.EacR11Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.EacR11Snorm:
-            return 8;
-        // 16-byte formats
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Rgba32Uint:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Rgba32Sint:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Rgba32Float:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc2RgbaUnorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc2RgbaUnormSrgb:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc3RgbaUnorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc3RgbaUnormSrgb:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc5RgUnorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc5RgSnorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc6hRgbUfloat:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc6hRgbFloat:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc7RgbaUnorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc7RgbaUnormSrgb:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Etc2Rgba8Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Etc2Rgba8UnormSrgb:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.EacRg11Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.EacRg11Snorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc4x4Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc4x4UnormSrgb:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc5x4Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc5x4UnormSrgb:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc5x5Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc5x5UnormSrgb:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc6x5Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc6x5UnormSrgb:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc6x6Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc6x6UnormSrgb:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc8x5Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc8x5UnormSrgb:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc8x6Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc8x6UnormSrgb:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc8x8Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc8x8UnormSrgb:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc10x5Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc10x5UnormSrgb:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc10x6Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc10x6UnormSrgb:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc10x8Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc10x8UnormSrgb:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc10x10Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc10x10UnormSrgb:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc12x10Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc12x10UnormSrgb:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc12x12Unorm:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc12x12UnormSrgb:
-        case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc2RgbaUnorm:
-            // NOTE: Bc2RgbaUnorm is already listed above; duplicate entries are
-            // harmless but kept out of caution when mapping from Rust.
-            return 16;
-        default:
-            throw new Error(`Unsupported texture format: ${format}`);
+    /**
+     * Returns the number of bytes in a compressed or uncompressed block for the
+     * given texture format. Matches the mapping from the Rust implementation and
+     * throws for unsupported formats.
+     */
+    static bytesPerBlock(format) {
+        switch (format) {
+            // 1-byte formats
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.R8Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.R8Snorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.R8Uint:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.R8Sint:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Stencil8:
+                return 1;
+            // 2-byte formats
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.R16Uint:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.R16Sint:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.R16Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.R16Snorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.R16Float:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.RG8Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.RG8Snorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.RG8Uint:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.RG8Sint:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Depth16Unorm:
+                return 2;
+            // 4-byte formats
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.R32Uint:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.R32Sint:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.R32Float:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.RG16Uint:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.RG16Sint:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.RG16Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.RG16Snorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.RG16Float:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Rgba8Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Rgba8UnormSrgb:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Rgba8Snorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Rgba8Uint:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Rgba8Sint:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bgra8Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bgra8UnormSrgb:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Rgb9e5Ufloat:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Rgb10a2Uint:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Rgb10a2Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Depth24Plus:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Depth24PlusStencil8:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Depth32Float:
+                return 4;
+            // 8-byte formats
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Rg11b10Ufloat:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.RG32Uint:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.RG32Sint:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.RG32Float:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Rgba16Uint:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Rgba16Sint:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Rgba16Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Rgba16Snorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Rgba16Float:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Depth32FloatStencil8:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc1RgbaUnorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc1RgbaUnormSrgb:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc4RUnorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc4RSnorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Etc2Rgb8Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Etc2Rgb8UnormSrgb:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Etc2Rgb8A1Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Etc2Rgb8A1UnormSrgb:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.EacR11Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.EacR11Snorm:
+                return 8;
+            // 16-byte formats
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Rgba32Uint:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Rgba32Sint:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Rgba32Float:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc2RgbaUnorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc2RgbaUnormSrgb:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc3RgbaUnorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc3RgbaUnormSrgb:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc5RgUnorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc5RgSnorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc6hRgbUfloat:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc6hRgbFloat:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc7RgbaUnorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc7RgbaUnormSrgb:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Etc2Rgba8Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Etc2Rgba8UnormSrgb:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.EacRg11Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.EacRg11Snorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc4x4Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc4x4UnormSrgb:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc5x4Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc5x4UnormSrgb:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc5x5Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc5x5UnormSrgb:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc6x5Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc6x5UnormSrgb:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc6x6Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc6x6UnormSrgb:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc8x5Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc8x5UnormSrgb:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc8x6Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc8x6UnormSrgb:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc8x8Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc8x8UnormSrgb:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc10x5Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc10x5UnormSrgb:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc10x6Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc10x6UnormSrgb:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc10x8Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc10x8UnormSrgb:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc10x10Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc10x10UnormSrgb:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc12x10Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc12x10UnormSrgb:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc12x12Unorm:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Astc12x12UnormSrgb:
+            case _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Bc2RgbaUnorm:
+                // NOTE: Bc2RgbaUnorm is already listed above; duplicate entries are
+                // harmless but kept out of caution when mapping from Rust.
+                return 16;
+            default:
+                throw new Error(`Unsupported texture format: ${format}`);
+        }
     }
 }
 
@@ -3502,7 +3505,7 @@ function padArrayBuffer(input, alignment) {
   \**********************************/
 /***/ ((module) => {
 
-module.exports = "@group(0) @binding(0) var source_tex: texture_2d<f32>;\r\n@group(0) @binding(1) var bilinear_sampler: sampler;\r\n\r\nstruct VertexOutput {\r\n    @builtin(position) position: vec4f,\r\n    @location(0) uv: vec2f,\r\n}\r\n\r\n@vertex\r\nfn vs_main(@builtin(vertex_index) i: u32) -> VertexOutput {\r\n    var output: VertexOutput;\r\n\r\n    // Full-screen triangle\r\n    let x = f32((i << 1u) & 2u);\r\n    let y = f32(i & 2u);\r\n\r\n    output.position = vec4f(x * 2.0 - 1.0, 1.0 - y * 2.0, 0.0, 1.0);\r\n    output.uv = vec2f(x, y);\r\n\r\n    return output;\r\n}\r\n\r\n@fragment\r\nfn fs_main(input: VertexOutput) -> @location(0) vec4f {\r\n    return textureSample(source_tex, bilinear_sampler, input.uv);\r\n}\r\n\r\n";
+module.exports = "@group(0) @binding(0) var source_tex: texture_2d<f32>;\n@group(0) @binding(1) var bilinear_sampler: sampler;\n\nstruct VertexOutput {\n    @builtin(position) position: vec4f,\n    @location(0) uv: vec2f,\n}\n\n@vertex\nfn vs_main(@builtin(vertex_index) i: u32) -> VertexOutput {\n    var output: VertexOutput;\n\n    // Full-screen triangle\n    let x = f32((i << 1u) & 2u);\n    let y = f32(i & 2u);\n\n    output.position = vec4f(x * 2.0 - 1.0, 1.0 - y * 2.0, 0.0, 1.0);\n    output.uv = vec2f(x, y);\n\n    return output;\n}\n\n@fragment\nfn fs_main(input: VertexOutput) -> @location(0) vec4f {\n    return textureSample(source_tex, bilinear_sampler, input.uv);\n}\n\n";
 
 /***/ })
 
@@ -3616,6 +3619,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   TextureFormat: () => (/* reexport safe */ _enums__WEBPACK_IMPORTED_MODULE_7__.TextureFormat),
 /* harmony export */   TextureSampleType: () => (/* reexport safe */ _enums__WEBPACK_IMPORTED_MODULE_7__.TextureSampleType),
 /* harmony export */   TextureUsage: () => (/* reexport safe */ _buffers_Buffer__WEBPACK_IMPORTED_MODULE_15__.TextureUsage),
+/* harmony export */   TextureUtils: () => (/* reexport safe */ _Texture__WEBPACK_IMPORTED_MODULE_14__.TextureUtils),
 /* harmony export */   TextureView: () => (/* reexport safe */ _Texture__WEBPACK_IMPORTED_MODULE_14__.TextureView),
 /* harmony export */   TextureViewBuilder: () => (/* reexport safe */ _Texture__WEBPACK_IMPORTED_MODULE_14__.TextureViewBuilder),
 /* harmony export */   TextureViewDimension: () => (/* reexport safe */ _enums__WEBPACK_IMPORTED_MODULE_7__.TextureViewDimension),

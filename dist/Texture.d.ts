@@ -71,3 +71,14 @@ export declare class TextureViewBuilder {
     withDimension(dim: TextureViewDimension): this;
     build(): TextureView;
 }
+export declare class TextureUtils {
+    static isBc(format: TextureFormat): boolean;
+    static isEtc(format: TextureFormat): boolean;
+    static getBlockWidth(format: TextureFormat): number;
+    /**
+     * Returns the number of bytes in a compressed or uncompressed block for the
+     * given texture format. Matches the mapping from the Rust implementation and
+     * throws for unsupported formats.
+     */
+    static bytesPerBlock(format: TextureFormat): number;
+}
