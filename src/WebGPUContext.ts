@@ -107,11 +107,12 @@ export class WebGPUContext {
 
         // Setup error handling
         this._device.lost.then((info: GPUDeviceLostInfo) => {
-            console.error('WebGPU device lost:', info.message);
-            if (info.reason !== 'destroyed') {
+            console.error("WebGPU device lost:", info.message, "\nReason:", info.reason);
+
+            if (info.reason !== "destroyed") {
                 // Attempt to reinitialize
                 this.initialize(options).catch((error) => {
-                    console.error('Failed to reinitialize WebGPU context:', error);
+                    console.error("Failed to reinitialize WebGPU context:", error);
                 });
             }
         });

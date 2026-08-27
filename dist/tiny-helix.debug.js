@@ -887,12 +887,12 @@ class RenderPass {
     /**
      * Issue a draw call using the currently set pipeline and mesh.
      */
-    draw() {
+    draw(numInstances = 1) {
         if (this._numIndices) {
-            this._inner.drawIndexed(this._numIndices, 1, 0, 0, 0);
+            this._inner.drawIndexed(this._numIndices, numInstances, 0, 0, 0);
         }
         else {
-            this._inner.draw(this._numVertices, 1, 0, 0);
+            this._inner.draw(this._numVertices, numInstances, 0, 0);
         }
         return this;
     }
@@ -1451,6 +1451,9 @@ class Shader {
         this._vertexAttributes = vertexAttributes;
         this._bindGroupLayouts = bindGroupLayouts;
     }
+    getCompilationInfo() {
+        return this._inner.getCompilationInfo();
+    }
     /**
      * Get the shader location for a named vertex attribute. Returns undefined if the attribute
      * is not declared by the shader.
@@ -1535,7 +1538,7 @@ class ShaderBuilder {
         }
         let code = this._code;
         for (const [name, inc] of this._includes) {
-            // Create a regex to match the include directive while allowing
+            // regex to match the include directive while allowing
             // optional whitespace between tokens, e.g.:
             //   #include<name>
             //   # include < name >
@@ -2360,11 +2363,11 @@ class WebGPUContext {
         }
         // Setup error handling
         this._device.lost.then((info) => {
-            console.error('WebGPU device lost:', info.message);
-            if (info.reason !== 'destroyed') {
+            console.error("WebGPU device lost:", info.message, "\nReason:", info.reason);
+            if (info.reason !== "destroyed") {
                 // Attempt to reinitialize
                 this.initialize(options).catch((error) => {
-                    console.error('Failed to reinitialize WebGPU context:', error);
+                    console.error("Failed to reinitialize WebGPU context:", error);
                 });
             }
         });

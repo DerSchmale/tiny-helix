@@ -17,6 +17,7 @@ export declare class Shader {
      * @internal
      */
     constructor(inner: GPUShaderModule, ctx: WebGPUContext, vertexAttributes: AttributeMap, bindGroupLayouts?: BindGroupLayout[]);
+    getCompilationInfo(): Promise<GPUCompilationInfo>;
     /**
      * Get the shader location for a named vertex attribute. Returns undefined if the attribute
      * is not declared by the shader.

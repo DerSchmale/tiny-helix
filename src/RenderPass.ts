@@ -73,11 +73,11 @@ export class RenderPass {
     /**
      * Issue a draw call using the currently set pipeline and mesh.
      */
-    draw(): this {
+    draw(numInstances = 1): this {
         if (this._numIndices) {
-            this._inner.drawIndexed(this._numIndices, 1, 0, 0, 0);
+            this._inner.drawIndexed(this._numIndices, numInstances, 0, 0, 0);
         } else {
-            this._inner.draw(this._numVertices, 1, 0, 0);
+            this._inner.draw(this._numVertices, numInstances, 0, 0);
         }
         return this;
     }

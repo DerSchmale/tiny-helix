@@ -27,6 +27,11 @@ export class Shader {
         this._bindGroupLayouts = bindGroupLayouts;
     }
 
+    getCompilationInfo(): Promise<GPUCompilationInfo>
+    {
+        return this._inner.getCompilationInfo();
+    }
+
     /**
      * Get the shader location for a named vertex attribute. Returns undefined if the attribute
      * is not declared by the shader.
@@ -133,7 +138,7 @@ export class ShaderBuilder {
 
         let code = this._code;
         for (const [name, inc] of this._includes) {
-            // Create a regex to match the include directive while allowing
+            // regex to match the include directive while allowing
             // optional whitespace between tokens, e.g.:
             //   #include<name>
             //   # include < name >

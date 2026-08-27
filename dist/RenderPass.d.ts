@@ -37,7 +37,7 @@ export declare class RenderPass {
     /**
      * Issue a draw call using the currently set pipeline and mesh.
      */
-    draw(): this;
+    draw(numInstances?: number): this;
     /**
      * End the render pass. After calling end(), the underlying encoder may
      * continue recording other passes or be finished/submitted.
