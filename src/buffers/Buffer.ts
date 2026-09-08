@@ -85,6 +85,9 @@ export class BufferBuilder {
      */
     build(): Buffer {
         const data = mapUndefined(this._data, data => padArrayBuffer(data, 4));
+        if (this._keepData && data) {
+            this._data = data;
+        }
         const buffer = this._ctx.device.createBuffer({
             size: data? data.byteLength : this._size, // in case we don't have data, we need to specify the size explicitly'
             usage: this._usage
@@ -94,7 +97,7 @@ export class BufferBuilder {
             this._ctx.device.queue.writeBuffer(buffer, 0, data);
         }
 
-        return new Buffer(buffer, this._keepData? this._data : undefined);
+        return new Buffer(buffer, this._keepData ? this._data : undefined);
     }
 }
 

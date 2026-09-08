@@ -241,6 +241,9 @@ export class UniformBuffer implements IBuffer {
      */
     setVec(name: string, values: number[] | IndexedCollection): this {
         const [ member, target ] = this._dataViews.get(name)!;
+        for (let i = 0; i < target.length; ++i) {
+            target[i] = 0;
+        }
 
         if (member.type.baseType == BaseType.Float16) {
             for (let i = 0; i < values.length; ++i) {
@@ -266,6 +269,9 @@ export class UniformBuffer implements IBuffer {
         const numCols = member.type.numCols;
         const numRows = member.type.numRows;
         const skipW = numRows === 3;
+        for (let i = 0; i < target.length; ++i) {
+            target[i] = 0;
+        }
 
         // I know looping inside the cases looks ugly and the loops are tiny, but I just can't bring myself to put
         // a switch in a loop

@@ -35,9 +35,11 @@ export declare class TinyHelix {
     private _globalBindBuffers;
     private _mipShader;
     /**
-     * Create a new TinyHelix instance. Call `initialize()` before rendering.
-     */
-    constructor(canvas: HTMLCanvasElement);
+      * Create a new TinyHelix instance from a HTMLCanvasElement or an existing TinyHelix instance.
+     *  When creating from a Canvas, call `initialize()` before rendering to initialize the WebGPU context. When
+     *  using an existing TinyHelix instance, the new instance will share the same WebGPU context and resources.
+      */
+    constructor(canvasOrHX: HTMLCanvasElement | TinyHelix);
     /**
      * Initializes the underlying WebGPU context and prepares resources.
      * @param options - Configuration options forwarded to the WebGPU context

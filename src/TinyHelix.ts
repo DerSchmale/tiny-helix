@@ -40,12 +40,22 @@ export class TinyHelix {
     private _globalBindBuffers: BindGroup[] = [];
     private _mipShader!: GPUShaderModule;
 
-    /**
-     * Create a new TinyHelix instance. Call `initialize()` before rendering.
+   /**
+     * Create a new TinyHelix instance from a HTMLCanvasElement or an existing TinyHelix instance.
+    *  When creating from a Canvas, call `initialize()` before rendering to initialize the WebGPU context. When
+    *  using an existing TinyHelix instance, the new instance will share the same WebGPU context and resources.
      */
-    constructor(canvas: HTMLCanvasElement) {
-        this._context = new WebGPUContext();
-        this._canvas = canvas;
+    constructor(canvasOrHX: HTMLCanvasElement | TinyHelix) {
+        if (canvasOrHX instanceof TinyHelix) {
+            this._context = canvasOrHX._context;
+            this._canvas = canvasOrHX._canvas;
+            this._mipShader = canvasOrHX._mipShader;
+            this._depthStencil = canvasOrHX._depthStencil;
+            this._depthStencilTarget = canvasOrHX._depthStencilTarget;
+        } else {
+            this._context = new WebGPUContext();
+            this._canvas = canvasOrHX;
+        }
     }
 
     /**

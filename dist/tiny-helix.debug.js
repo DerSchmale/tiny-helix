@@ -2045,15 +2045,26 @@ __webpack_require__.r(__webpack_exports__);
  */
 class TinyHelix {
     /**
-     * Create a new TinyHelix instance. Call `initialize()` before rendering.
-     */
-    constructor(canvas) {
+      * Create a new TinyHelix instance from a HTMLCanvasElement or an existing TinyHelix instance.
+     *  When creating from a Canvas, call `initialize()` before rendering to initialize the WebGPU context. When
+     *  using an existing TinyHelix instance, the new instance will share the same WebGPU context and resources.
+      */
+    constructor(canvasOrHX) {
         this._options = {};
         this._shaderIncludes = new Map();
         this._globalBindBufferLayouts = [];
         this._globalBindBuffers = [];
-        this._context = new _WebGPUContext__WEBPACK_IMPORTED_MODULE_0__.WebGPUContext();
-        this._canvas = canvas;
+        if (canvasOrHX instanceof TinyHelix) {
+            this._context = canvasOrHX._context;
+            this._canvas = canvasOrHX._canvas;
+            this._mipShader = canvasOrHX._mipShader;
+            this._depthStencil = canvasOrHX._depthStencil;
+            this._depthStencilTarget = canvasOrHX._depthStencilTarget;
+        }
+        else {
+            this._context = new _WebGPUContext__WEBPACK_IMPORTED_MODULE_0__.WebGPUContext();
+            this._canvas = canvasOrHX;
+        }
     }
     /**
      * Initializes the underlying WebGPU context and prepares resources.
@@ -2510,6 +2521,9 @@ class BufferBuilder {
      */
     build() {
         const data = (0,_utils_mapUndefined__WEBPACK_IMPORTED_MODULE_0__.mapUndefined)(this._data, data => (0,_utils_padArrayBuffer__WEBPACK_IMPORTED_MODULE_1__.padArrayBuffer)(data, 4));
+        if (this._keepData && data) {
+            this._data = data;
+        }
         const buffer = this._ctx.device.createBuffer({
             size: data ? data.byteLength : this._size, // in case we don't have data, we need to specify the size explicitly'
             usage: this._usage
@@ -2981,6 +2995,9 @@ class UniformBuffer {
      */
     setVec(name, values) {
         const [member, target] = this._dataViews.get(name);
+        for (let i = 0; i < target.length; ++i) {
+            target[i] = 0;
+        }
         if (member.type.baseType == BaseType.Float16) {
             for (let i = 0; i < values.length; ++i) {
                 target[i] = (0,_utils_float32ToFloat16__WEBPACK_IMPORTED_MODULE_1__.float32ToFloat16)(values[i]);
@@ -3003,6 +3020,9 @@ class UniformBuffer {
         const numCols = member.type.numCols;
         const numRows = member.type.numRows;
         const skipW = numRows === 3;
+        for (let i = 0; i < target.length; ++i) {
+            target[i] = 0;
+        }
         // I know looping inside the cases looks ugly and the loops are tiny, but I just can't bring myself to put
         // a switch in a loop
         let i = 0;
