@@ -136,7 +136,20 @@ export class ShaderBuilder {
             throw new Error("Shader code not specified. Use withCode() to set the shader source.");
         }
 
-        let code = this._code;
+        const header = this._ctx.shaderF16Supported ?
+            `enable f16;
+            alias half = f16;
+            alias vec2h = vec2<f16>;
+            alias vec3h = vec3<f16>;
+            alias vec4h = vec4<f16>;
+            `:
+            `alias half = f32;
+            alias vec2h = vec2<f32>; 
+            alias vec3h = vec3<f32>;
+            alias vec4h = vec4<f32>;
+            `;
+
+        let code = header + "\n\n" + this._code;
         for (const [name, inc] of this._includes) {
             // regex to match the include directive while allowing
             // optional whitespace between tokens, e.g.:

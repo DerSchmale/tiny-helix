@@ -28,6 +28,7 @@ export interface TinyHelixOptions extends WebGPUContextOptions {
  * backbuffer and provides helpers to create render targets and command encoders.
  */
 export class TinyHelix {
+    private _parent: TinyHelix | null = null;
     private _context: WebGPUContext;
     private _options: TinyHelixOptions = {};
     private _backbuffer?: Texture;
@@ -36,8 +37,8 @@ export class TinyHelix {
     private _depthStencilTarget?: RenderTarget;
     private _shaderIncludes: Map<string, string> = new Map();
     private _canvas: HTMLCanvasElement;
-    private _globalBindBufferLayouts: BindGroupLayout[] = [];
-    private _globalBindBuffers: BindGroup[] = [];
+    private _globalBindGroupLayouts: BindGroupLayout[] = [];
+    private _globalBindGroups: BindGroup[] = [];
     private _mipShader!: GPUShaderModule;
 
    /**
@@ -56,6 +57,33 @@ export class TinyHelix {
             this._context = new WebGPUContext();
             this._canvas = canvasOrHX;
         }
+    }
+
+    /**
+     * Copies all shader includes from another TinyHelix instance.
+     * @param hx - The TinyHelix instance to copy includes from.
+     */
+    copyIncludesFrom(hx: TinyHelix): this {
+        hx._shaderIncludes.forEach((v, k) => this._shaderIncludes.set(k, v));
+        return this;
+    }
+
+    /**
+     * Copies all global bind groups from another TinyHelix instance.
+     * @param hx - The TinyHelix instance to copy global bind groups from.
+     */
+    copyGlobalBindGroupsFrom(hx: TinyHelix): this {
+        if (this._context != hx._context) {
+            throw new Error("Cannot copy global bind groups from another TinyHelix instance with a different WebGPU context.");
+        }
+
+        if (this._globalBindGroups.length > 0 || this._globalBindGroupLayouts.length > 0) {
+            throw new Error("Cannot copy global bind groups from another TinyHelix instance if this instance already has global bind groups set.");
+        }
+
+        this._globalBindGroupLayouts = [...hx._globalBindGroupLayouts];
+        this._globalBindGroups = [...hx._globalBindGroups];
+        return this;
     }
 
     /**
@@ -156,10 +184,17 @@ export class TinyHelix {
      * @example tiny.startFrame();
      */
     startFrame() {
-        this._backbuffer = Texture.from_webgpu(this._context.getCurrentTexture(), this._context.format, this._context);
-        this._backbufferTarget = this.createRenderTarget(this._backbuffer)
-            .withMipLevel(0)
-            .build();
+        if (this._parent) {
+            this._backbuffer = this._parent.backbuffer;
+            this._backbufferTarget = this._parent.backbufferTarget;
+            return;
+        }
+        else {
+            this._backbuffer = Texture.from_webgpu(this._context.getCurrentTexture(), this._context.format, this._context);
+            this._backbufferTarget = this.createRenderTarget(this._backbuffer)
+                .withMipLevel(0)
+                .build();
+        }
     }
 
     /**
@@ -178,7 +213,7 @@ export class TinyHelix {
         let builder = new ShaderBuilder(this._context);
 
         this._shaderIncludes.forEach((v, k) => builder = builder.withInclude(k, v));
-        this._globalBindBufferLayouts.forEach((layout, i) => builder.withBindGroup(i, layout))
+        this._globalBindGroupLayouts.forEach((layout, i) => builder.withBindGroup(i, layout))
 
         return builder;
     }
@@ -244,7 +279,7 @@ export class TinyHelix {
      * @param label - Optional debug label to assign to the encoder
      */
     createCommandEncoder(label?: string): CommandEncoder {
-        return new CommandEncoder(this.backbufferTarget, this._globalBindBuffers, this._context, this._depthStencilTarget, label);
+        return new CommandEncoder(this.backbufferTarget, this._globalBindGroups, this._context, this._depthStencilTarget, label);
     }
 
     /**
@@ -279,8 +314,8 @@ export class TinyHelix {
      * @param buffer - The bind group to set.
      */
     setGlobalBindGroup(index: number, layout: BindGroupLayout, buffer: BindGroup): this {
-        this._globalBindBufferLayouts[index] = layout;
-        this._globalBindBuffers[index] = buffer;
+        this._globalBindGroupLayouts[index] = layout;
+        this._globalBindGroups[index] = buffer;
         return this;
     }
 

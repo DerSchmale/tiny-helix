@@ -25,6 +25,7 @@ export class WebGPUContext {
     private _format: TextureFormat = TextureFormat.Rgba8UnormSrgb;
     private _canvas: HTMLCanvasElement | null = null;
     private _colorSpace: ColorSpace = ColorSpace.sRGB;
+    private _shaderF16Supported: boolean = false;
 
     /**
      * Gets the WebGPU adapter. Throws if not initialized.
@@ -95,6 +96,22 @@ export class WebGPUContext {
             throw new Error('Failed to get WebGPU adapter');
         }
 
+        // By default, shader-f16 is enabled whenever available, while TinyHelix provides f32 fallback if it doesn't.
+        // The user can ask for explicit support through the features. At this point, it will NOT provide a fallback
+        // and fail to create the context.
+        this._shaderF16Supported = this._adapter.features.has('shader-f16');
+        const requiresF16 = options.requiredFeatures?.includes("shader-f16");
+        if (!this._shaderF16Supported) {
+            if (requiresF16)
+                throw new Error("shader-f16 feature requested but not available");
+            else
+                console.warn("WebGPU adapter does not support shader-f16 feature. Performance may be suboptimal for certain workloads.");
+        }
+        else if (!requiresF16) {
+            options.requiredFeatures = options.requiredFeatures ?? [];
+            options.requiredFeatures?.push("shader-f16");
+        }
+
         // Request device
         this._device = await this._adapter.requestDevice({
             requiredFeatures: options.requiredFeatures,
@@ -144,6 +161,15 @@ export class WebGPUContext {
         else {
             console.warn("No canvas provided!");
         }
+    }
+
+    /**
+     * Indicates whether the shaders support the f16 format. Use the type `half`, `vec2h`, `vec3h`, `vec4h`, etc. to
+     * provide f32 fallbacks if f16 is not supported.
+     */
+    get shaderF16Supported(): boolean
+    {
+        return this._shaderF16Supported;
     }
 
     /**

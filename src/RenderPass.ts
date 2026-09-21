@@ -141,11 +141,12 @@ export class RenderPassBuilder {
     withDepthStencilTarget(target: RenderTarget): this {
         this._depthTarget = target;
         return this;
-    }
+    }e
 
     /**
      * Set the clear color for the most recently added color target.
      * Overloads allow passing an array or individual color components.
+     * Be sure to call this unless you really want to load the existing contents of the target.
      */
     withClearColor(): this;
     withClearColor(r: number[] | IndexedCollection): this;

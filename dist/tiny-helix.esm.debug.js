@@ -2038,10 +2038,11 @@ class TinyHelix {
      *  using an existing TinyHelix instance, the new instance will share the same WebGPU context and resources.
       */
     constructor(canvasOrHX) {
+        this._parent = null;
         this._options = {};
         this._shaderIncludes = new Map();
-        this._globalBindBufferLayouts = [];
-        this._globalBindBuffers = [];
+        this._globalBindGroupLayouts = [];
+        this._globalBindGroups = [];
         if (canvasOrHX instanceof TinyHelix) {
             this._context = canvasOrHX._context;
             this._canvas = canvasOrHX._canvas;
@@ -2053,6 +2054,29 @@ class TinyHelix {
             this._context = new _WebGPUContext__WEBPACK_IMPORTED_MODULE_0__.WebGPUContext();
             this._canvas = canvasOrHX;
         }
+    }
+    /**
+     * Copies all shader includes from another TinyHelix instance.
+     * @param hx - The TinyHelix instance to copy includes from.
+     */
+    copyIncludesFrom(hx) {
+        hx._shaderIncludes.forEach((v, k) => this._shaderIncludes.set(k, v));
+        return this;
+    }
+    /**
+     * Copies all global bind groups from another TinyHelix instance.
+     * @param hx - The TinyHelix instance to copy global bind groups from.
+     */
+    copyGlobalBindGroupsFrom(hx) {
+        if (this._context != hx._context) {
+            throw new Error("Cannot copy global bind groups from another TinyHelix instance with a different WebGPU context.");
+        }
+        if (this._globalBindGroups.length > 0 || this._globalBindGroupLayouts.length > 0) {
+            throw new Error("Cannot copy global bind groups from another TinyHelix instance if this instance already has global bind groups set.");
+        }
+        this._globalBindGroupLayouts = [...hx._globalBindGroupLayouts];
+        this._globalBindGroups = [...hx._globalBindGroups];
+        return this;
     }
     /**
      * Initializes the underlying WebGPU context and prepares resources.
@@ -2139,10 +2163,17 @@ class TinyHelix {
      * @example tiny.startFrame();
      */
     startFrame() {
-        this._backbuffer = _Texture__WEBPACK_IMPORTED_MODULE_2__.Texture.from_webgpu(this._context.getCurrentTexture(), this._context.format, this._context);
-        this._backbufferTarget = this.createRenderTarget(this._backbuffer)
-            .withMipLevel(0)
-            .build();
+        if (this._parent) {
+            this._backbuffer = this._parent.backbuffer;
+            this._backbufferTarget = this._parent.backbufferTarget;
+            return;
+        }
+        else {
+            this._backbuffer = _Texture__WEBPACK_IMPORTED_MODULE_2__.Texture.from_webgpu(this._context.getCurrentTexture(), this._context.format, this._context);
+            this._backbufferTarget = this.createRenderTarget(this._backbuffer)
+                .withMipLevel(0)
+                .build();
+        }
     }
     /**
      * Create a RenderTargetBuilder for a given texture.
@@ -2156,7 +2187,7 @@ class TinyHelix {
     createShader() {
         let builder = new _Shader__WEBPACK_IMPORTED_MODULE_4__.ShaderBuilder(this._context);
         this._shaderIncludes.forEach((v, k) => builder = builder.withInclude(k, v));
-        this._globalBindBufferLayouts.forEach((layout, i) => builder.withBindGroup(i, layout));
+        this._globalBindGroupLayouts.forEach((layout, i) => builder.withBindGroup(i, layout));
         return builder;
     }
     /**
@@ -2206,7 +2237,7 @@ class TinyHelix {
      * @param label - Optional debug label to assign to the encoder
      */
     createCommandEncoder(label) {
-        return new _CommandEncoder__WEBPACK_IMPORTED_MODULE_1__.CommandEncoder(this.backbufferTarget, this._globalBindBuffers, this._context, this._depthStencilTarget, label);
+        return new _CommandEncoder__WEBPACK_IMPORTED_MODULE_1__.CommandEncoder(this.backbufferTarget, this._globalBindGroups, this._context, this._depthStencilTarget, label);
     }
     /**
      * Create a UniformBufferLayoutBuilder for creating a UniformBufferLayout.
@@ -2234,8 +2265,8 @@ class TinyHelix {
      * @param buffer - The bind group to set.
      */
     setGlobalBindGroup(index, layout, buffer) {
-        this._globalBindBufferLayouts[index] = layout;
-        this._globalBindBuffers[index] = buffer;
+        this._globalBindGroupLayouts[index] = layout;
+        this._globalBindGroups[index] = buffer;
         return this;
     }
     /**
@@ -2801,6 +2832,8 @@ function sizeForBaseType(type) {
         case BaseType.Float16:
             return 2;
         case BaseType.Float32:
+        case BaseType.Uint:
+        case BaseType.Sint:
             return 4;
         case BaseType.Boolean:
             return 1;

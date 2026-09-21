@@ -21,6 +21,8 @@ function sizeForBaseType(type: BaseType): number {
         case BaseType.Float16:
             return 2;
         case BaseType.Float32:
+        case BaseType.Uint:
+        case BaseType.Sint:
             return 4;
         case BaseType.Boolean:
             return 1;

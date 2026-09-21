@@ -23,6 +23,7 @@ export interface TinyHelixOptions extends WebGPUContextOptions {
  * backbuffer and provides helpers to create render targets and command encoders.
  */
 export declare class TinyHelix {
+    private _parent;
     private _context;
     private _options;
     private _backbuffer?;
@@ -31,8 +32,8 @@ export declare class TinyHelix {
     private _depthStencilTarget?;
     private _shaderIncludes;
     private _canvas;
-    private _globalBindBufferLayouts;
-    private _globalBindBuffers;
+    private _globalBindGroupLayouts;
+    private _globalBindGroups;
     private _mipShader;
     /**
       * Create a new TinyHelix instance from a HTMLCanvasElement or an existing TinyHelix instance.
@@ -40,6 +41,16 @@ export declare class TinyHelix {
      *  using an existing TinyHelix instance, the new instance will share the same WebGPU context and resources.
       */
     constructor(canvasOrHX: HTMLCanvasElement | TinyHelix);
+    /**
+     * Copies all shader includes from another TinyHelix instance.
+     * @param hx - The TinyHelix instance to copy includes from.
+     */
+    copyIncludesFrom(hx: TinyHelix): this;
+    /**
+     * Copies all global bind groups from another TinyHelix instance.
+     * @param hx - The TinyHelix instance to copy global bind groups from.
+     */
+    copyGlobalBindGroupsFrom(hx: TinyHelix): this;
     /**
      * Initializes the underlying WebGPU context and prepares resources.
      * @param options - Configuration options forwarded to the WebGPU context
