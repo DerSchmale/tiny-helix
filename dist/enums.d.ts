@@ -191,3 +191,7 @@ export declare enum ShaderStage {
     Fragment,
     Compute
 }
+export declare enum StoreOp {
+    Store = "store",
+    Discard = "discard"
+}

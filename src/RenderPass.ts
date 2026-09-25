@@ -4,7 +4,7 @@ import {Mesh} from "./Mesh";
 import {BindGroup} from "./BindGroup";
 import {IndexedCollection} from "./utils/IndexedCollection";
 import {mapUndefined} from "./utils/mapUndefined";
-import {TextureFormat} from "./enums";
+import {StoreOp, TextureFormat} from "./enums";
 import {Buffer} from "./buffers/Buffer";
 
 /**
@@ -89,7 +89,12 @@ export class RenderPass {
      * @param indirectOffset The offset in bytes into the indirectBuffer where the draw parameters are stored. Must be a multiple of 4.
      */
     drawIndirect(indirectBuffer: Buffer, indirectOffset: number = 0): this {
-        this._inner.drawIndirect(indirectBuffer._inner, indirectOffset);
+        if (this._numIndices) {
+            this._inner.drawIndexedIndirect(indirectBuffer._inner, indirectOffset);
+        }
+        else {
+            this._inner.drawIndirect(indirectBuffer._inner, indirectOffset);
+        }
         return this;
     }
 
@@ -119,6 +124,7 @@ export class RenderPassBuilder {
     private _clearDepth?: number;
     private _clearStencil?: number;
     private _globalBindGroups: BindGroup[];
+    private _storeOps: GPUStoreOp[] = [];
 
     /**
      * Create a new builder instance. This should only be called from the CommandEncoder
@@ -184,6 +190,19 @@ export class RenderPassBuilder {
     }
 
     /**
+     * Set the store operation for the most recently added color target. Defaults to 'store' if not specified.
+     * @param storeOp
+     */
+    withStoreOp(storeOp: StoreOp): this {
+        if (this._colorTargets.length === 0) {
+            this._storeOps[0] = storeOp as GPUStoreOp;
+        } else {
+            this._storeOps[this._colorTargets.length - 1] = storeOp as GPUStoreOp;
+        }
+        return this;
+    }
+
+    /**
      * Set the clear stencil value
      */
     withClearStencil(stencil: number): this {
@@ -229,7 +248,7 @@ export class RenderPassBuilder {
         const colorAttachments: GPURenderPassColorAttachment[] = targets.map((target, i) => ({
             view: target._inner,
             loadOp: this._clearColors[i] ? 'clear' : 'load',
-            storeOp: 'store',
+            storeOp: this._storeOps[i] ?? 'store',
             clearValue: this._clearColors[i]
         }));
 

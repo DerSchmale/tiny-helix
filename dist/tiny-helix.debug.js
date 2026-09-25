@@ -902,7 +902,12 @@ class RenderPass {
      * @param indirectOffset The offset in bytes into the indirectBuffer where the draw parameters are stored. Must be a multiple of 4.
      */
     drawIndirect(indirectBuffer, indirectOffset = 0) {
-        this._inner.drawIndirect(indirectBuffer._inner, indirectOffset);
+        if (this._numIndices) {
+            this._inner.drawIndexedIndirect(indirectBuffer._inner, indirectOffset);
+        }
+        else {
+            this._inner.drawIndirect(indirectBuffer._inner, indirectOffset);
+        }
         return this;
     }
     /**
@@ -928,6 +933,7 @@ class RenderPassBuilder {
     constructor(commandEncoder, globalBindGroups, defaultTarget, defaultDepthTarget) {
         this._colorTargets = [];
         this._clearColors = [];
+        this._storeOps = [];
         this._encoder = commandEncoder;
         this._defaultTarget = defaultTarget;
         this._defaultDepthTarget = defaultDepthTarget;
@@ -973,6 +979,19 @@ class RenderPassBuilder {
         return this;
     }
     /**
+     * Set the store operation for the most recently added color target. Defaults to 'store' if not specified.
+     * @param storeOp
+     */
+    withStoreOp(storeOp) {
+        if (this._colorTargets.length === 0) {
+            this._storeOps[0] = storeOp;
+        }
+        else {
+            this._storeOps[this._colorTargets.length - 1] = storeOp;
+        }
+        return this;
+    }
+    /**
      * Set the clear stencil value
      */
     withClearStencil(stencil) {
@@ -1013,7 +1032,7 @@ class RenderPassBuilder {
         const colorAttachments = targets.map((target, i) => ({
             view: target._inner,
             loadOp: this._clearColors[i] ? 'clear' : 'load',
-            storeOp: 'store',
+            storeOp: this._storeOps[i] ?? 'store',
             clearValue: this._clearColors[i]
         }));
         const desc = {
@@ -3162,6 +3181,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   SamplerType: () => (/* binding */ SamplerType),
 /* harmony export */   ShaderStage: () => (/* binding */ ShaderStage),
 /* harmony export */   StorageAccess: () => (/* binding */ StorageAccess),
+/* harmony export */   StoreOp: () => (/* binding */ StoreOp),
 /* harmony export */   TextureDimension: () => (/* binding */ TextureDimension),
 /* harmony export */   TextureFormat: () => (/* binding */ TextureFormat),
 /* harmony export */   TextureSampleType: () => (/* binding */ TextureSampleType),
@@ -3374,6 +3394,11 @@ var ShaderStage;
     ShaderStage[ShaderStage["Fragment"] = GPUShaderStage.FRAGMENT] = "Fragment";
     ShaderStage[ShaderStage["Compute"] = GPUShaderStage.COMPUTE] = "Compute";
 })(ShaderStage || (ShaderStage = {}));
+var StoreOp;
+(function (StoreOp) {
+    StoreOp["Store"] = "store";
+    StoreOp["Discard"] = "discard";
+})(StoreOp || (StoreOp = {}));
 
 
 /***/ }),
@@ -3712,6 +3737,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   ShaderBuilder: () => (/* reexport safe */ _Shader__WEBPACK_IMPORTED_MODULE_13__.ShaderBuilder),
 /* harmony export */   ShaderStage: () => (/* reexport safe */ _enums__WEBPACK_IMPORTED_MODULE_7__.ShaderStage),
 /* harmony export */   StorageAccess: () => (/* reexport safe */ _enums__WEBPACK_IMPORTED_MODULE_7__.StorageAccess),
+/* harmony export */   StoreOp: () => (/* reexport safe */ _enums__WEBPACK_IMPORTED_MODULE_7__.StoreOp),
 /* harmony export */   StreamBuilder: () => (/* reexport safe */ _Mesh__WEBPACK_IMPORTED_MODULE_8__.StreamBuilder),
 /* harmony export */   Texture: () => (/* reexport safe */ _Texture__WEBPACK_IMPORTED_MODULE_14__.Texture),
 /* harmony export */   TextureBuilder: () => (/* reexport safe */ _Texture__WEBPACK_IMPORTED_MODULE_14__.TextureBuilder),

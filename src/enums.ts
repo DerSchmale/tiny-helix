@@ -204,3 +204,8 @@ export enum ShaderStage {
     Fragment = GPUShaderStage.FRAGMENT,
     Compute = GPUShaderStage.COMPUTE
 }
+
+export enum StoreOp {
+    Store = "store",
+    Discard = "discard"
+}

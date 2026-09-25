@@ -4,6 +4,7 @@ import { RenderPipeline } from "./RenderPipeline";
 import { Mesh } from "./Mesh";
 import { BindGroup } from "./BindGroup";
 import { IndexedCollection } from "./utils/IndexedCollection";
+import { StoreOp } from "./enums";
 import { Buffer } from "./buffers/Buffer";
 /**
  * Lightweight wrapper around GPURenderPassEncoder. Provides a minimal API
@@ -68,6 +69,7 @@ export declare class RenderPassBuilder {
     private _clearDepth?;
     private _clearStencil?;
     private _globalBindGroups;
+    private _storeOps;
     /**
      * Create a new builder instance. This should only be called from the CommandEncoder
      * instance (see {@link CommandEncoder.createRenderPass}).
@@ -93,6 +95,11 @@ export declare class RenderPassBuilder {
     withClearColor(r: number[] | IndexedCollection): this;
     withClearColor(r: number, g: number, b: number): this;
     withClearColor(r: number, g: number, b: number, a: number): this;
+    /**
+     * Set the store operation for the most recently added color target. Defaults to 'store' if not specified.
+     * @param storeOp
+     */
+    withStoreOp(storeOp: StoreOp): this;
     /**
      * Set the clear stencil value
      */
