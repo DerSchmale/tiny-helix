@@ -24,6 +24,7 @@ export declare class WebGPUContext {
     private _format;
     private _canvas;
     private _colorSpace;
+    private _shaderF16Supported;
     /**
      * Gets the WebGPU adapter. Throws if not initialized.
      */
@@ -58,6 +59,11 @@ export declare class WebGPUContext {
      * @throws Error if WebGPU is not supported or initialization fails
      */
     initialize(options?: WebGPUContextOptions): Promise<void>;
+    /**
+     * Indicates whether the shaders support the f16 format. Use the type `half`, `vec2h`, `vec3h`, `vec4h`, etc. to
+     * provide f32 fallbacks if f16 is not supported.
+     */
+    get shaderF16Supported(): boolean;
     /**
      * Internal helper to fetch the current swapchain texture.
      * @internal

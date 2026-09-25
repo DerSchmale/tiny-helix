@@ -885,6 +885,15 @@ class RenderPass {
         return this;
     }
     /**
+     * Issue an indirect draw call using the currently set pipeline and mesh.
+     * @param indirectBuffer A Buffer containing the draw parameters. The buffer must have been created with the `Indirect` usage flag.
+     * @param indirectOffset The offset in bytes into the indirectBuffer where the draw parameters are stored. Must be a multiple of 4.
+     */
+    drawIndirect(indirectBuffer, indirectOffset = 0) {
+        this._inner.drawIndirect(indirectBuffer._inner, indirectOffset);
+        return this;
+    }
+    /**
      * End the render pass. After calling end(), the underlying encoder may
      * continue recording other passes or be finished/submitted.
      */
@@ -1524,7 +1533,19 @@ class ShaderBuilder {
         if (!this._code) {
             throw new Error("Shader code not specified. Use withCode() to set the shader source.");
         }
-        let code = this._code;
+        const header = this._ctx.shaderF16Supported ?
+            `enable f16;
+            alias half = f16;
+            alias vec2h = vec2<f16>;
+            alias vec3h = vec3<f16>;
+            alias vec4h = vec4<f16>;
+            ` :
+            `alias half = f32;
+            alias vec2h = vec2<f32>; 
+            alias vec3h = vec3<f32>;
+            alias vec4h = vec4<f32>;
+            `;
+        let code = header + "\n\n" + this._code;
         for (const [name, inc] of this._includes) {
             // regex to match the include directive while allowing
             // optional whitespace between tokens, e.g.:
@@ -2324,6 +2345,7 @@ class WebGPUContext {
         this._format = _enums__WEBPACK_IMPORTED_MODULE_0__.TextureFormat.Rgba8UnormSrgb;
         this._canvas = null;
         this._colorSpace = _enums__WEBPACK_IMPORTED_MODULE_0__.ColorSpace.sRGB;
+        this._shaderF16Supported = false;
     }
     /**
      * Gets the WebGPU adapter. Throws if not initialized.
@@ -2383,6 +2405,21 @@ class WebGPUContext {
         if (!this._adapter) {
             throw new Error('Failed to get WebGPU adapter');
         }
+        // By default, shader-f16 is enabled whenever available, while TinyHelix provides f32 fallback if it doesn't.
+        // The user can ask for explicit support through the features. At this point, it will NOT provide a fallback
+        // and fail to create the context.
+        this._shaderF16Supported = this._adapter.features.has('shader-f16');
+        const requiresF16 = options.requiredFeatures?.includes("shader-f16");
+        if (!this._shaderF16Supported) {
+            if (requiresF16)
+                throw new Error("shader-f16 feature requested but not available");
+            else
+                console.warn("WebGPU adapter does not support shader-f16 feature. Performance may be suboptimal for certain workloads.");
+        }
+        else if (!requiresF16) {
+            options.requiredFeatures = options.requiredFeatures ?? [];
+            options.requiredFeatures?.push("shader-f16");
+        }
         // Request device
         this._device = await this._adapter.requestDevice({
             requiredFeatures: options.requiredFeatures,
@@ -2425,6 +2462,13 @@ class WebGPUContext {
         else {
             console.warn("No canvas provided!");
         }
+    }
+    /**
+     * Indicates whether the shaders support the f16 format. Use the type `half`, `vec2h`, `vec3h`, `vec4h`, etc. to
+     * provide f32 fallbacks if f16 is not supported.
+     */
+    get shaderF16Supported() {
+        return this._shaderF16Supported;
     }
     /**
      * Internal helper to fetch the current swapchain texture.

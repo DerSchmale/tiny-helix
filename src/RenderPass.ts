@@ -5,6 +5,7 @@ import {BindGroup} from "./BindGroup";
 import {IndexedCollection} from "./utils/IndexedCollection";
 import {mapUndefined} from "./utils/mapUndefined";
 import {TextureFormat} from "./enums";
+import {Buffer} from "./buffers/Buffer";
 
 /**
  * Lightweight wrapper around GPURenderPassEncoder. Provides a minimal API
@@ -83,6 +84,16 @@ export class RenderPass {
     }
 
     /**
+     * Issue an indirect draw call using the currently set pipeline and mesh.
+     * @param indirectBuffer A Buffer containing the draw parameters. The buffer must have been created with the `Indirect` usage flag.
+     * @param indirectOffset The offset in bytes into the indirectBuffer where the draw parameters are stored. Must be a multiple of 4.
+     */
+    drawIndirect(indirectBuffer: Buffer, indirectOffset: number = 0): this {
+        this._inner.drawIndirect(indirectBuffer._inner, indirectOffset);
+        return this;
+    }
+
+    /**
      * End the render pass. After calling end(), the underlying encoder may
      * continue recording other passes or be finished/submitted.
      */
@@ -141,7 +152,7 @@ export class RenderPassBuilder {
     withDepthStencilTarget(target: RenderTarget): this {
         this._depthTarget = target;
         return this;
-    }e
+    }
 
     /**
      * Set the clear color for the most recently added color target.

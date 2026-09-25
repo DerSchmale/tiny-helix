@@ -4,6 +4,7 @@ import { RenderPipeline } from "./RenderPipeline";
 import { Mesh } from "./Mesh";
 import { BindGroup } from "./BindGroup";
 import { IndexedCollection } from "./utils/IndexedCollection";
+import { Buffer } from "./buffers/Buffer";
 /**
  * Lightweight wrapper around GPURenderPassEncoder. Provides a minimal API
  * for ending the pass; higher-level helpers may be added later.
@@ -38,6 +39,12 @@ export declare class RenderPass {
      * Issue a draw call using the currently set pipeline and mesh.
      */
     draw(numInstances?: number): this;
+    /**
+     * Issue an indirect draw call using the currently set pipeline and mesh.
+     * @param indirectBuffer A Buffer containing the draw parameters. The buffer must have been created with the `Indirect` usage flag.
+     * @param indirectOffset The offset in bytes into the indirectBuffer where the draw parameters are stored. Must be a multiple of 4.
+     */
+    drawIndirect(indirectBuffer: Buffer, indirectOffset?: number): this;
     /**
      * End the render pass. After calling end(), the underlying encoder may
      * continue recording other passes or be finished/submitted.
@@ -80,6 +87,7 @@ export declare class RenderPassBuilder {
     /**
      * Set the clear color for the most recently added color target.
      * Overloads allow passing an array or individual color components.
+     * Be sure to call this unless you really want to load the existing contents of the target.
      */
     withClearColor(): this;
     withClearColor(r: number[] | IndexedCollection): this;
