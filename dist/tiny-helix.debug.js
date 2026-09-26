@@ -2621,12 +2621,13 @@ class BufferBuilder {
         if (this._keepData && data) {
             this._data = data;
         }
+        this._size = data?.byteLength ?? this._size;
         const buffer = this._ctx.device.createBuffer({
             size: this._size,
             usage: this._usage
         });
         if (data) {
-            this._ctx.device.queue.writeBuffer(buffer, 0, data, this._dataOffset, this._size);
+            this._ctx.device.queue.writeBuffer(buffer, 0, data);
         }
         return new Buffer(buffer, this._keepData ? this._data : undefined);
     }
