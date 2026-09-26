@@ -43,6 +43,7 @@ export class BufferBuilder {
     private _size = 0;
     private _keepData = false;
     private _usage: number = 0;
+    private _dataOffset: number = 0;
 
     constructor(ctx: WebGPUContext) {
         this._ctx = ctx;
@@ -62,11 +63,12 @@ export class BufferBuilder {
      * ArrayBuffer is stored in the resulting `Buffer.data` field for readback or
      * reuse.
      */
-    withData(data: ArrayBufferLike, keepOnCPU: boolean = false) {
+    withData(data: ArrayBufferLike, keepOnCPU: boolean = false, offset: number = 0, length: number = data.byteLength): this{
         this._data = data;
         // round to the nearest multiple of 4 bytes, as required by GPUBuffer.writeBuffer()
-        this._size = data.byteLength;
+        this._size = length ?? (data.byteLength - offset);
         this._keepData = keepOnCPU;
+        this._dataOffset = offset;
         this._usage |= BufferUsage.CopyDst;
         return this;
     }
@@ -84,17 +86,17 @@ export class BufferBuilder {
      * Create the GPU buffer and upload any provided data.
      */
     build(): Buffer {
-        const data = mapUndefined(this._data, data => padArrayBuffer(data, 4));
+        const data = mapUndefined(this._data, data => padArrayBuffer(data, 4, this._dataOffset, this._size));
         if (this._keepData && data) {
             this._data = data;
         }
         const buffer = this._ctx.device.createBuffer({
-            size: data? data.byteLength : this._size, // in case we don't have data, we need to specify the size explicitly'
+            size: this._size,
             usage: this._usage
         });
 
         if (data) {
-            this._ctx.device.queue.writeBuffer(buffer, 0, data);
+            this._ctx.device.queue.writeBuffer(buffer, 0, data, this._dataOffset, this._size);
         }
 
         return new Buffer(buffer, this._keepData ? this._data : undefined);

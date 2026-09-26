@@ -39,6 +39,7 @@ export declare class BufferBuilder {
     private _size;
     private _keepData;
     private _usage;
+    private _dataOffset;
     constructor(ctx: WebGPUContext);
     /**
      * Add usage flags for the GPU buffer.
@@ -49,7 +50,7 @@ export declare class BufferBuilder {
      * ArrayBuffer is stored in the resulting `Buffer.data` field for readback or
      * reuse.
      */
-    withData(data: ArrayBufferLike, keepOnCPU?: boolean): this;
+    withData(data: ArrayBufferLike, keepOnCPU?: boolean, offset?: number, length?: number): this;
     /**
      * Specify a size for the buffer, used when not providing data.
      */

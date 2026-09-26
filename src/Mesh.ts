@@ -21,7 +21,7 @@ class IndexBuffer {
         this.format = bytesPerElement === 2 ? IndexFormat.Uint16 : IndexFormat.Uint32;
         this.count = data.length;
         this.buffer = new BufferBuilder(ctx)
-            .withData(data.buffer, keepData)
+            .withData(data.buffer, keepData, data.byteOffset, data.byteLength)
             .withUsage(BufferUsage.CopyDst | BufferUsage.Index)
             .build();
     }
@@ -275,9 +275,10 @@ export class StreamBuilder {
      * Upload vertex data for this stream. `keepOnCPU` controls whether the
      * source ArrayBuffer is retained in memory for readback.
      */
-    withData(data: ArrayBufferLike, keepOnCPU: boolean = false) {
+    withData(data: ArrayBufferLike, byteOffset: number = 0, byteLength?: number, keepOnCPU: boolean = false) {
+        byteLength = byteLength ?? (data.byteLength - byteOffset);
         this._stream.buffer = new BufferBuilder(this._ctx)
-            .withData(data, keepOnCPU)
+            .withData(data, keepOnCPU, byteOffset, byteLength)
             .withUsage(BufferUsage.Vertex | BufferUsage.CopyDst)
             .build();
     }

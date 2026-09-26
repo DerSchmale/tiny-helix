@@ -528,7 +528,7 @@ class IndexBuffer {
         this.format = bytesPerElement === 2 ? IndexFormat.Uint16 : IndexFormat.Uint32;
         this.count = data.length;
         this.buffer = new _buffers_Buffer__WEBPACK_IMPORTED_MODULE_0__.BufferBuilder(ctx)
-            .withData(data.buffer, keepData)
+            .withData(data.buffer, keepData, data.byteOffset, data.byteLength)
             .withUsage(_buffers_Buffer__WEBPACK_IMPORTED_MODULE_0__.BufferUsage.CopyDst | _buffers_Buffer__WEBPACK_IMPORTED_MODULE_0__.BufferUsage.Index)
             .build();
     }
@@ -746,9 +746,10 @@ class StreamBuilder {
      * Upload vertex data for this stream. `keepOnCPU` controls whether the
      * source ArrayBuffer is retained in memory for readback.
      */
-    withData(data, keepOnCPU = false) {
+    withData(data, byteOffset = 0, byteLength, keepOnCPU = false) {
+        byteLength = byteLength ?? (data.byteLength - byteOffset);
         this._stream.buffer = new _buffers_Buffer__WEBPACK_IMPORTED_MODULE_0__.BufferBuilder(this._ctx)
-            .withData(data, keepOnCPU)
+            .withData(data, keepOnCPU, byteOffset, byteLength)
             .withUsage(_buffers_Buffer__WEBPACK_IMPORTED_MODULE_0__.BufferUsage.Vertex | _buffers_Buffer__WEBPACK_IMPORTED_MODULE_0__.BufferUsage.CopyDst)
             .build();
     }
@@ -2569,6 +2570,7 @@ class BufferBuilder {
         this._size = 0;
         this._keepData = false;
         this._usage = 0;
+        this._dataOffset = 0;
         this._ctx = ctx;
     }
     /**
@@ -2583,11 +2585,12 @@ class BufferBuilder {
      * ArrayBuffer is stored in the resulting `Buffer.data` field for readback or
      * reuse.
      */
-    withData(data, keepOnCPU = false) {
+    withData(data, keepOnCPU = false, offset = 0, length = data.byteLength) {
         this._data = data;
         // round to the nearest multiple of 4 bytes, as required by GPUBuffer.writeBuffer()
-        this._size = data.byteLength;
+        this._size = length ?? (data.byteLength - offset);
         this._keepData = keepOnCPU;
+        this._dataOffset = offset;
         this._usage |= BufferUsage.CopyDst;
         return this;
     }
@@ -2602,16 +2605,16 @@ class BufferBuilder {
      * Create the GPU buffer and upload any provided data.
      */
     build() {
-        const data = (0,_utils_mapUndefined__WEBPACK_IMPORTED_MODULE_0__.mapUndefined)(this._data, data => (0,_utils_padArrayBuffer__WEBPACK_IMPORTED_MODULE_1__.padArrayBuffer)(data, 4));
+        const data = (0,_utils_mapUndefined__WEBPACK_IMPORTED_MODULE_0__.mapUndefined)(this._data, data => (0,_utils_padArrayBuffer__WEBPACK_IMPORTED_MODULE_1__.padArrayBuffer)(data, 4, this._dataOffset, this._size));
         if (this._keepData && data) {
             this._data = data;
         }
         const buffer = this._ctx.device.createBuffer({
-            size: data ? data.byteLength : this._size, // in case we don't have data, we need to specify the size explicitly'
+            size: this._size,
             usage: this._usage
         });
         if (data) {
-            this._ctx.device.queue.writeBuffer(buffer, 0, data);
+            this._ctx.device.queue.writeBuffer(buffer, 0, data, this._dataOffset, this._size);
         }
         return new Buffer(buffer, this._keepData ? this._data : undefined);
     }
@@ -3596,14 +3599,16 @@ __webpack_require__.r(__webpack_exports__);
  *
  * @param input - The input ArrayBuffer or SharedArrayBuffer to pad
  * @param alignment - Desired byte alignment (e.g. 4 for 32-bit alignment)
+ * @param offset - The offset in bytes from the start of the input buffer to begin copying from
+ * @param size - The number of bytes to copy from the input buffer
  * @returns A buffer with byteLength rounded up to the nearest multiple of alignment
  */
-function padArrayBuffer(input, alignment) {
-    const targetSize = Math.ceil(input.byteLength / alignment) * alignment;
-    if (targetSize === input.byteLength)
+function padArrayBuffer(input, alignment, offset, size) {
+    const targetSize = Math.ceil(size / alignment) * alignment;
+    if (targetSize === size)
         return input;
     const data = input instanceof ArrayBuffer ? new ArrayBuffer(targetSize) : new SharedArrayBuffer(targetSize);
-    const src = new Uint8Array(input);
+    const src = new Uint8Array(input, offset, size);
     const dst = new Uint8Array(data);
     dst.set(src);
     return data;

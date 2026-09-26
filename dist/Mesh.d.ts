@@ -144,7 +144,7 @@ export declare class StreamBuilder {
      * Upload vertex data for this stream. `keepOnCPU` controls whether the
      * source ArrayBuffer is retained in memory for readback.
      */
-    withData(data: ArrayBufferLike, keepOnCPU?: boolean): void;
+    withData(data: ArrayBufferLike, byteOffset?: number, byteLength?: number, keepOnCPU?: boolean): void;
 }
 /**
  * Fluent builder for creating a Mesh. Use `pushStream()` to describe vertex
