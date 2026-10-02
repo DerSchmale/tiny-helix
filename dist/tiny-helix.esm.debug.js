@@ -2096,6 +2096,21 @@ class TinyHelix {
             this._canvas = canvasOrHX;
         }
     }
+    get shaderF16Supported() {
+        return this._context.shaderF16Supported;
+    }
+    get floatFilteringSupported() {
+        return this._context.floatFilteringSupported;
+    }
+    get adapter() {
+        return this._context.adapter;
+    }
+    get device() {
+        return this._context.device;
+    }
+    get context() {
+        return this._context.context;
+    }
     /**
      * Copies all shader includes from another TinyHelix instance.
      * @param hx - The TinyHelix instance to copy includes from.
@@ -2366,6 +2381,7 @@ class WebGPUContext {
         this._canvas = null;
         this._colorSpace = _enums__WEBPACK_IMPORTED_MODULE_0__.ColorSpace.sRGB;
         this._shaderF16Supported = false;
+        this._floatFilteringSupported = false;
     }
     /**
      * Gets the WebGPU adapter. Throws if not initialized.
@@ -2428,7 +2444,8 @@ class WebGPUContext {
         // By default, shader-f16 is enabled whenever available, while TinyHelix provides f32 fallback if it doesn't.
         // The user can ask for explicit support through the features. At this point, it will NOT provide a fallback
         // and fail to create the context.
-        this._shaderF16Supported = this._adapter.features.has('shader-f16');
+        this._shaderF16Supported = this._adapter.features.has("shader-f16");
+        this._floatFilteringSupported = this._adapter.features.has("float32-filterable");
         const requiresF16 = options.requiredFeatures?.includes("shader-f16");
         if (!this._shaderF16Supported) {
             if (requiresF16)
@@ -2439,6 +2456,10 @@ class WebGPUContext {
         else if (!requiresF16) {
             options.requiredFeatures = options.requiredFeatures ?? [];
             options.requiredFeatures?.push("shader-f16");
+        }
+        if (this._floatFilteringSupported && !options.requiredFeatures?.includes("float32-filterable")) {
+            options.requiredFeatures = options.requiredFeatures ?? [];
+            options.requiredFeatures?.push("float32-filterable");
         }
         // Request device
         this._device = await this._adapter.requestDevice({
@@ -2489,6 +2510,12 @@ class WebGPUContext {
      */
     get shaderF16Supported() {
         return this._shaderF16Supported;
+    }
+    /**
+     * Indicates whether the device supports filtering on float32 textures.
+     */
+    get floatFilteringSupported() {
+        return this._floatFilteringSupported;
     }
     /**
      * Internal helper to fetch the current swapchain texture.
@@ -3606,7 +3633,8 @@ __webpack_require__.r(__webpack_exports__);
  */
 function padArrayBuffer(input, alignment, offset, size) {
     const targetSize = Math.ceil(size / alignment) * alignment;
-    if (targetSize === size)
+    const needsSlice = offset !== 0 || size !== input.byteLength;
+    if (!needsSlice && targetSize === size)
         return input;
     const data = input instanceof ArrayBuffer ? new ArrayBuffer(targetSize) : new SharedArrayBuffer(targetSize);
     const src = new Uint8Array(input, offset, size);

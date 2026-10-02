@@ -25,6 +25,7 @@ export declare class WebGPUContext {
     private _canvas;
     private _colorSpace;
     private _shaderF16Supported;
+    private _floatFilteringSupported;
     /**
      * Gets the WebGPU adapter. Throws if not initialized.
      */
@@ -64,6 +65,10 @@ export declare class WebGPUContext {
      * provide f32 fallbacks if f16 is not supported.
      */
     get shaderF16Supported(): boolean;
+    /**
+     * Indicates whether the device supports filtering on float32 textures.
+     */
+    get floatFilteringSupported(): boolean;
     /**
      * Internal helper to fetch the current swapchain texture.
      * @internal

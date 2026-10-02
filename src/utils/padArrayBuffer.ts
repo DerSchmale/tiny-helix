@@ -11,7 +11,8 @@
  */
 export function padArrayBuffer(input: ArrayBuffer | SharedArrayBuffer, alignment: number, offset: number, size: number): ArrayBuffer | SharedArrayBuffer {
     const targetSize = Math.ceil(size / alignment) * alignment;
-    if (targetSize === size) return input;
+    const needsSlice = offset !== 0 || size !== input.byteLength;
+    if (!needsSlice && targetSize === size) return input;
     const data = input instanceof ArrayBuffer ? new ArrayBuffer(targetSize) : new SharedArrayBuffer(targetSize);
     const src = new Uint8Array(input, offset, size);
     const dst = new Uint8Array(data);

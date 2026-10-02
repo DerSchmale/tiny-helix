@@ -59,6 +59,31 @@ export class TinyHelix {
         }
     }
 
+    get shaderF16Supported(): boolean
+    {
+        return this._context.shaderF16Supported;
+    }
+
+    get floatFilteringSupported(): boolean
+    {
+        return this._context.floatFilteringSupported;
+    }
+
+    get adapter(): GPUAdapter
+    {
+        return this._context.adapter;
+    }
+
+    get device(): GPUDevice
+    {
+        return this._context.device;
+    }
+
+    get context(): GPUCanvasContext
+    {
+        return this._context.context;
+    }
+
     /**
      * Copies all shader includes from another TinyHelix instance.
      * @param hx - The TinyHelix instance to copy includes from.

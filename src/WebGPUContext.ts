@@ -26,6 +26,7 @@ export class WebGPUContext {
     private _canvas: HTMLCanvasElement | null = null;
     private _colorSpace: ColorSpace = ColorSpace.sRGB;
     private _shaderF16Supported: boolean = false;
+    private _floatFilteringSupported: boolean = false;
 
     /**
      * Gets the WebGPU adapter. Throws if not initialized.
@@ -99,7 +100,8 @@ export class WebGPUContext {
         // By default, shader-f16 is enabled whenever available, while TinyHelix provides f32 fallback if it doesn't.
         // The user can ask for explicit support through the features. At this point, it will NOT provide a fallback
         // and fail to create the context.
-        this._shaderF16Supported = this._adapter.features.has('shader-f16');
+        this._shaderF16Supported = this._adapter.features.has("shader-f16");
+        this._floatFilteringSupported = this._adapter.features.has("float32-filterable");
         const requiresF16 = options.requiredFeatures?.includes("shader-f16");
         if (!this._shaderF16Supported) {
             if (requiresF16)
@@ -110,6 +112,11 @@ export class WebGPUContext {
         else if (!requiresF16) {
             options.requiredFeatures = options.requiredFeatures ?? [];
             options.requiredFeatures?.push("shader-f16");
+        }
+
+        if (this._floatFilteringSupported && !options.requiredFeatures?.includes("float32-filterable")) {
+            options.requiredFeatures = options.requiredFeatures ?? [];
+            options.requiredFeatures?.push("float32-filterable");
         }
 
         // Request device
@@ -170,6 +177,14 @@ export class WebGPUContext {
     get shaderF16Supported(): boolean
     {
         return this._shaderF16Supported;
+    }
+
+    /**
+     * Indicates whether the device supports filtering on float32 textures.
+     */
+    get floatFilteringSupported(): boolean
+    {
+        return this._floatFilteringSupported;
     }
 
     /**

@@ -1,3 +1,4 @@
+/// <reference types="@webgpu/types" />
 import { WebGPUContextOptions } from './WebGPUContext';
 import { CommandEncoder } from "./CommandEncoder";
 import { Texture, TextureBuilder } from "./Texture";
@@ -41,6 +42,11 @@ export declare class TinyHelix {
      *  using an existing TinyHelix instance, the new instance will share the same WebGPU context and resources.
       */
     constructor(canvasOrHX: HTMLCanvasElement | TinyHelix);
+    get shaderF16Supported(): boolean;
+    get floatFilteringSupported(): boolean;
+    get adapter(): GPUAdapter;
+    get device(): GPUDevice;
+    get context(): GPUCanvasContext;
     /**
      * Copies all shader includes from another TinyHelix instance.
      * @param hx - The TinyHelix instance to copy includes from.
