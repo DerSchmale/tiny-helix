@@ -132,6 +132,25 @@ export class RenderPipelineBuilder {
     }
 
     /**
+     * Sets the depth bias for each triangle.
+     * @param depthBias Constant depth bias added to each triangle fragment.
+     * @param slopeScale Depth bias that scales with the triangle fragment’s slope.
+     * @param max The maximum depth bias of a triangle fragment.
+     */
+    withDepthBias(depthBias: number, slopeScale?: number, max?: number): this {
+        const target = this._depthState ?? this._defaultDepthState;
+        if (!target) {
+            console.warn("No depth target set. Setting depth compare function has no effect.");
+        }
+        else {
+            target.depthBias = depthBias;
+            target.depthBiasSlopeScale = slopeScale;
+            target.depthBiasClamp = max;
+        }
+        return this;
+    }
+
+    /**
      * Enable or disable depth writes. Default is `true`.
      * @param enabled
      */

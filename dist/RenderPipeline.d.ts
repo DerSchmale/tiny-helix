@@ -60,6 +60,13 @@ export declare class RenderPipelineBuilder {
      */
     withDepthCompare(compare: CompareFunction): this;
     /**
+     * Sets the depth bias for each triangle.
+     * @param depthBias Constant depth bias added to each triangle fragment.
+     * @param slopeScale Depth bias that scales with the triangle fragment’s slope.
+     * @param max The maximum depth bias of a triangle fragment.
+     */
+    withDepthBias(depthBias: number, slopeScale?: number, max?: number): this;
+    /**
      * Enable or disable depth writes. Default is `true`.
      * @param enabled
      */
