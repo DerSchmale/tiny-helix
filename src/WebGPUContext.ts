@@ -1,137 +1,210 @@
+import {ColorSpace, TextureFormat} from "./enums";
+
 /**
  * Options for initializing WebGPU context
  */
 export interface WebGPUContextOptions {
-  /** The canvas element to render to */
-  canvas?: HTMLCanvasElement;
-  /** Power preference for adapter selection */
-  powerPreference?: GPUPowerPreference;
-  /** Required features for the device */
-  requiredFeatures?: GPUFeatureName[];
-  /** Required limits for the device */
-  requiredLimits?: Record<string, number>;
+    /** The canvas element to render to */
+    canvas?: HTMLCanvasElement;
+    /** Power preference for adapter selection */
+    powerPreference?: GPUPowerPreference;
+    /** Required features for the device */
+    requiredFeatures?: GPUFeatureName[];
+    /** Required limits for the device */
+    requiredLimits?: Record<string, number>;
+    colorSpace?: ColorSpace;
 }
 
 /**
  * Manages WebGPU adapter, device, and context initialization
  */
 export class WebGPUContext {
-  private _adapter: GPUAdapter | null = null;
-  private _device: GPUDevice | null = null;
-  private _context: GPUCanvasContext | null = null;
-  private _format: GPUTextureFormat = 'bgra8unorm';
-  private _canvas: HTMLCanvasElement | null = null;
+    private _adapter: GPUAdapter | null = null;
+    private _device: GPUDevice | null = null;
+    private _context: GPUCanvasContext | null = null;
+    private _format: TextureFormat = TextureFormat.Rgba8UnormSrgb;
+    private _canvas: HTMLCanvasElement | null = null;
+    private _colorSpace: ColorSpace = ColorSpace.sRGB;
+    private _shaderF16Supported: boolean = false;
+    private _floatFilteringSupported: boolean = false;
 
-  /**
-   * Gets the WebGPU adapter
-   */
-  get adapter(): GPUAdapter | null {
-    return this._adapter;
-  }
-
-  /**
-   * Gets the WebGPU device
-   */
-  get device(): GPUDevice | null {
-    return this._device;
-  }
-
-  /**
-   * Gets the GPU canvas context
-   */
-  get context(): GPUCanvasContext | null {
-    return this._context;
-  }
-
-  /**
-   * Gets the preferred texture format
-   */
-  get format(): GPUTextureFormat {
-    return this._format;
-  }
-
-  /**
-   * Gets the canvas element
-   */
-  get canvas(): HTMLCanvasElement | null {
-    return this._canvas;
-  }
-
-  /**
-   * Checks if WebGPU is supported in the current environment
-   */
-  static isSupported(): boolean {
-    return typeof navigator !== 'undefined' && 'gpu' in navigator;
-  }
-
-  /**
-   * Initializes the WebGPU context
-   * @param options - Configuration options for initialization
-   * @throws Error if WebGPU is not supported or initialization fails
-   */
-  async initialize(options: WebGPUContextOptions = {}): Promise<void> {
-    if (!WebGPUContext.isSupported()) {
-      throw new Error('WebGPU is not supported in this browser');
+    /**
+     * Gets the WebGPU adapter. Throws if not initialized.
+     */
+    get adapter(): GPUAdapter {
+        return this._adapter!;
     }
 
-    // Request adapter
-    this._adapter = await navigator.gpu.requestAdapter({
-      powerPreference: options.powerPreference ?? 'high-performance',
-    });
-
-    if (!this._adapter) {
-      throw new Error('Failed to get WebGPU adapter');
+    /**
+     * Gets the WebGPU device. Throws if not initialized.
+     */
+    get device(): GPUDevice {
+        return this._device!;
     }
 
-    // Request device
-    this._device = await this._adapter.requestDevice({
-      requiredFeatures: options.requiredFeatures,
-      requiredLimits: options.requiredLimits,
-    });
-
-    if (!this._device) {
-      throw new Error('Failed to get WebGPU device');
+    /**
+     * Gets the GPU canvas context. Throws if no canvas was configured.
+     */
+    get context(): GPUCanvasContext {
+        return this._context!;
     }
 
-    // Setup error handling
-    this._device.lost.then((info: GPUDeviceLostInfo) => {
-      console.error('WebGPU device lost:', info.message);
-      if (info.reason !== 'destroyed') {
-        // Attempt to reinitialize
-        this.initialize(options).catch((error) => {
-          console.error('Failed to reinitialize WebGPU context:', error);
+    /**
+     * Gets the preferred texture format used by the configured canvas/context.
+     */
+    get format(): TextureFormat {
+        return this._format;
+    }
+
+    /**
+     * Gets the color space used by the configured canvas/context.
+     */
+    get colorSpace(): ColorSpace
+    {
+        return this._colorSpace;
+    }
+
+    /**
+     * Gets the configured canvas element. Throws if none was provided during initialization.
+     */
+    get canvas(): HTMLCanvasElement {
+        return this._canvas!;
+    }
+
+    /**
+     * Checks if WebGPU is supported in the current environment.
+     */
+    static isSupported(): boolean {
+        return typeof navigator !== 'undefined' && 'gpu' in navigator;
+    }
+
+    /**
+     * Initializes the WebGPU context and device.
+     * @param options - Configuration options such as canvas and adapter preferences
+     * @throws Error if WebGPU is not supported or initialization fails
+     */
+    async initialize(options: WebGPUContextOptions = {}) {
+        if (!WebGPUContext.isSupported()) {
+            throw new Error('WebGPU is not supported in this browser');
+        }
+
+        // Request adapter
+        this._adapter = await navigator.gpu.requestAdapter({
+            powerPreference: options.powerPreference ?? 'high-performance',
         });
-      }
-    });
 
-    // Configure canvas context if provided
-    if (options.canvas) {
-      this._canvas = options.canvas;
-      this._context = this._canvas.getContext('webgpu') as GPUCanvasContext | null;
+        if (!this._adapter) {
+            throw new Error('Failed to get WebGPU adapter');
+        }
 
-      if (!this._context) {
-        throw new Error('Failed to get WebGPU context from canvas');
-      }
+        // By default, shader-f16 is enabled whenever available, while TinyHelix provides f32 fallback if it doesn't.
+        // The user can ask for explicit support through the features. At this point, it will NOT provide a fallback
+        // and fail to create the context.
+        this._shaderF16Supported = this._adapter.features.has("shader-f16");
+        this._floatFilteringSupported = this._adapter.features.has("float32-filterable");
+        const requiresF16 = options.requiredFeatures?.includes("shader-f16");
+        if (!this._shaderF16Supported) {
+            if (requiresF16)
+                throw new Error("shader-f16 feature requested but not available");
+            else
+                console.warn("WebGPU adapter does not support shader-f16 feature. Performance may be suboptimal for certain workloads.");
+        }
+        else if (!requiresF16) {
+            options.requiredFeatures = options.requiredFeatures ?? [];
+            options.requiredFeatures?.push("shader-f16");
+        }
 
-      this._format = navigator.gpu.getPreferredCanvasFormat();
-      this._context.configure({
-        device: this._device,
-        format: this._format,
-        alphaMode: 'premultiplied',
-      });
+        if (this._floatFilteringSupported && !options.requiredFeatures?.includes("float32-filterable")) {
+            options.requiredFeatures = options.requiredFeatures ?? [];
+            options.requiredFeatures?.push("float32-filterable");
+        }
+
+        // Request device
+        this._device = await this._adapter.requestDevice({
+            requiredFeatures: options.requiredFeatures,
+            requiredLimits: options.requiredLimits,
+        });
+
+        if (!this._device) {
+            throw new Error('Failed to get WebGPU device');
+        }
+
+        // Setup error handling
+        this._device.lost.then((info: GPUDeviceLostInfo) => {
+            console.error("WebGPU device lost:", info.message, "\nReason:", info.reason);
+
+            if (info.reason !== "destroyed") {
+                // Attempt to reinitialize
+                this.initialize(options).catch((error) => {
+                    console.error("Failed to reinitialize WebGPU context:", error);
+                });
+            }
+        });
+
+        // Configure canvas context if provided
+        if (options.canvas) {
+            this._canvas = options.canvas;
+            this._context = this._canvas.getContext("webgpu") as GPUCanvasContext;
+
+            if (!this._context) {
+                throw new Error("Failed to get WebGPU context from canvas");
+            }
+
+            const canUseP3 = window.matchMedia("(color-gamut: p3)").matches;
+            this._colorSpace = options.colorSpace ?? ColorSpace.sRGB;
+            if (this._colorSpace === ColorSpace.DisplayP3 && !canUseP3) {
+                this._colorSpace = ColorSpace.sRGB;
+                console.warn("DisplayP3 not supported, falling back to sRGB");
+            }
+
+            this._format = navigator.gpu.getPreferredCanvasFormat() as TextureFormat;
+            this._context.configure({
+                device: this._device,
+                format: this._format,
+                colorSpace: this._colorSpace,
+                alphaMode: "premultiplied",
+            });
+        }
+        else {
+            console.warn("No canvas provided!");
+        }
     }
-  }
 
-  /**
-   * Destroys the WebGPU context and releases resources
-   */
-  destroy(): void {
-    if (this._device) {
-      this._device.destroy();
-      this._device = null;
+    /**
+     * Indicates whether the shaders support the f16 format. Use the type `half`, `vec2h`, `vec3h`, `vec4h`, etc. to
+     * provide f32 fallbacks if f16 is not supported.
+     */
+    get shaderF16Supported(): boolean
+    {
+        return this._shaderF16Supported;
     }
-    this._adapter = null;
-    this._context = null;
-    this._canvas = null;
-  }
+
+    /**
+     * Indicates whether the device supports filtering on float32 textures.
+     */
+    get floatFilteringSupported(): boolean
+    {
+        return this._floatFilteringSupported;
+    }
+
+    /**
+     * Internal helper to fetch the current swapchain texture.
+     * @internal
+     */
+    getCurrentTexture(): GPUTexture {
+        return this._context!.getCurrentTexture();
+    }
+
+    /**
+     * Destroys the WebGPU context and releases resources
+     */
+    destroy(): void {
+        if (this._device) {
+            this._device.destroy();
+            this._device = null;
+        }
+        this._adapter = null;
+        this._context = null;
+        this._canvas = null;
+    }
 }

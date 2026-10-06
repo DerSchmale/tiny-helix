@@ -1,30 +1,382 @@
 import {WebGPUContext, WebGPUContextOptions} from './WebGPUContext';
+import {CommandEncoder} from "./CommandEncoder";
+import {Texture, TextureBuilder} from "./Texture";
+import {RenderTarget, RenderTargetBuilder} from "./RenderTarget";
+import {ShaderBuilder} from "./Shader";
+import {RenderPipelineBuilder} from "./RenderPipeline";
+import {MeshBuilder} from "./Mesh";
+import {UniformBuffer, UniformBufferLayout, UniformBufferLayoutBuilder} from "./buffers/UniformBuffer";
+import BindGroupLayoutBuilder, {BindGroup, BindGroupBuilder, BindGroupLayout} from "./BindGroup";
+import {SamplerBuilder} from "./Sampler";
+import {ComputePipelineBuilder} from "./ComputePipeline";
+import {ColorSpace, TextureFormat} from "./enums";
+import {mapUndefined} from "./utils/mapUndefined";
+import {BufferBuilder} from "./buffers/Buffer";
+import mipCode from './wgsl/mip_2d_2x2.wgsl';
 
 /**
  * Options for initializing TinyHelix
  */
 export interface TinyHelixOptions extends WebGPUContextOptions {
     // Possible to add more options later
+    /** Optional format to use for the depth/stencil buffer */
+    depthStencilFormat?: TextureFormat;
 }
 
 /**
- * Main entry point for the tiny-helix API
+ * Main entry point for the tiny-helix API. Manages the WebGPU context,
+ * backbuffer and provides helpers to create render targets and command encoders.
  */
 export class TinyHelix {
-  private _context: WebGPUContext;
+    private _parent: TinyHelix | null = null;
+    private _context: WebGPUContext;
+    private _options: TinyHelixOptions = {};
+    private _backbuffer?: Texture;
+    private _backbufferTarget?: RenderTarget;
+    private _depthStencil?: Texture;
+    private _depthStencilTarget?: RenderTarget;
+    private _shaderIncludes: Map<string, string> = new Map();
+    private _canvas: HTMLCanvasElement;
+    private _globalBindGroupLayouts: BindGroupLayout[] = [];
+    private _globalBindGroups: BindGroup[] = [];
+    private _mipShader!: GPUShaderModule;
 
-  /**
-   * Creates a new TinyHelix instance
-   * @param options - Configuration options
-   */
-  constructor() {
-    this._context = new WebGPUContext();
-  }
+   /**
+     * Create a new TinyHelix instance from a HTMLCanvasElement or an existing TinyHelix instance.
+    *  When creating from a Canvas, call `initialize()` before rendering to initialize the WebGPU context. When
+    *  using an existing TinyHelix instance, the new instance will share the same WebGPU context and resources.
+     */
+    constructor(canvasOrHX: HTMLCanvasElement | TinyHelix) {
+        if (canvasOrHX instanceof TinyHelix) {
+            this._context = canvasOrHX._context;
+            this._canvas = canvasOrHX._canvas;
+            this._mipShader = canvasOrHX._mipShader;
+            this._depthStencil = canvasOrHX._depthStencil;
+            this._depthStencilTarget = canvasOrHX._depthStencilTarget;
+        } else {
+            this._context = new WebGPUContext();
+            this._canvas = canvasOrHX;
+        }
+    }
 
-  /**
-   * Destroys the TinyHelix instance and releases all resources
-   */
-  destroy(): void {
-    this._context.destroy();
-  }
+    get shaderF16Supported(): boolean
+    {
+        return this._context.shaderF16Supported;
+    }
+
+    get floatFilteringSupported(): boolean
+    {
+        return this._context.floatFilteringSupported;
+    }
+
+    get adapter(): GPUAdapter
+    {
+        return this._context.adapter;
+    }
+
+    get device(): GPUDevice
+    {
+        return this._context.device;
+    }
+
+    get context(): GPUCanvasContext
+    {
+        return this._context.context;
+    }
+
+    /**
+     * Copies all shader includes from another TinyHelix instance.
+     * @param hx - The TinyHelix instance to copy includes from.
+     */
+    copyIncludesFrom(hx: TinyHelix): this {
+        hx._shaderIncludes.forEach((v, k) => this._shaderIncludes.set(k, v));
+        return this;
+    }
+
+    /**
+     * Copies all global bind groups from another TinyHelix instance.
+     * @param hx - The TinyHelix instance to copy global bind groups from.
+     */
+    copyGlobalBindGroupsFrom(hx: TinyHelix): this {
+        if (this._context != hx._context) {
+            throw new Error("Cannot copy global bind groups from another TinyHelix instance with a different WebGPU context.");
+        }
+
+        if (this._globalBindGroups.length > 0 || this._globalBindGroupLayouts.length > 0) {
+            throw new Error("Cannot copy global bind groups from another TinyHelix instance if this instance already has global bind groups set.");
+        }
+
+        this._globalBindGroupLayouts = [...hx._globalBindGroupLayouts];
+        this._globalBindGroups = [...hx._globalBindGroups];
+        return this;
+    }
+
+    /**
+     * Initializes the underlying WebGPU context and prepares resources.
+     * @param options - Configuration options forwarded to the WebGPU context
+     * @example await tiny.initialize({ canvas: myCanvas });
+     */
+    async initialize(options: TinyHelixOptions = {}) {
+        options.canvas = this._canvas;
+        this._options = options;
+
+        await this._context.initialize(options);
+
+        this._createDepthStencil();
+        this._mipShader = this._context.device.createShaderModule({
+            code: mipCode,
+            label: "MipRenderer Shader Module",
+        });
+    }
+
+    resize(width: number, height: number) {
+        this._canvas.width = width;
+        this._canvas.height = height;
+        this._createDepthStencil();
+    }
+
+    /**
+     * Add a named include for all shader code. The include will be expanded
+     * in any shader code created through {@link TinyHelix.createShader}.
+     * The include name must be unique within the shader code. This allows
+     * using `#include<name>` in the shader code to include other files.
+     * While this is not standard WGSL, it's too useful not to support.
+     '
+     * @param name - The name as used in the `#include<name>` directive.
+     * @param source - The code the include should expand to.
+     */
+    addShaderInclude(name: string, source: string): this {
+        this._shaderIncludes.set(name, source);
+        return this;
+    }
+
+    /**
+     * Return the chosen depth/stencil format if configured.
+     */
+    get depthStencilFormat(): TextureFormat | undefined {
+        return this._options.depthStencilFormat;
+    }
+
+    /**
+     * The current frame's backbuffer texture. Valid after `startFrame()` has been
+     * called.
+     * @throws Error if accessed before startFrame()
+     */
+    get backbuffer(): Texture {
+        if (!this._backbuffer) {
+            throw new Error('Backbuffer not initialized. Did you forget to call startFrame()?');
+        }
+        return this._backbuffer!;
+    }
+
+    /**
+     * The RenderTarget wrapper for the current backbuffer. Valid after `startFrame()`.
+     * @throws Error if accessed before startFrame()
+     */
+    get backbufferTarget(): RenderTarget {
+        if (!this._backbufferTarget) {
+            throw new Error('Backbuffer not initialized. Did you forget to call startFrame()?');
+        }
+        return this._backbufferTarget!;
+    }
+
+    get colorSpace(): ColorSpace
+    {
+        return this._context.colorSpace;
+    }
+
+    get backbufferFormat(): TextureFormat {
+        return this._context.format;
+    }
+
+    /**
+     * The width of the current backbuffer. Valid after `startFrame()`.
+     */
+    get backbufferWidth(): number {
+        return this._canvas.width;
+    }
+
+    /**
+     * The height of the current backbuffer. Valid after `startFrame()`.
+     */
+    get backbufferHeight(): number {
+        return this._canvas.height;
+    }
+
+    /**
+     * Needs to be called before rendering each frame. Updates internal backbuffer
+     * references to the current swapchain texture.
+     * @example tiny.startFrame();
+     */
+    startFrame() {
+        if (this._parent) {
+            this._backbuffer = this._parent.backbuffer;
+            this._backbufferTarget = this._parent.backbufferTarget;
+            return;
+        }
+        else {
+            this._backbuffer = Texture.from_webgpu(this._context.getCurrentTexture(), this._context.format, this._context);
+            this._backbufferTarget = this.createRenderTarget(this._backbuffer)
+                .withMipLevel(0)
+                .build();
+        }
+    }
+
+    /**
+     * Create a RenderTargetBuilder for a given texture.
+     */
+    createRenderTarget(target: Texture): RenderTargetBuilder
+    {
+        return new RenderTargetBuilder(target);
+    }
+
+    /**
+     * Create a ShaderBuilder for creating a Shader.
+     */
+    createShader(): ShaderBuilder
+    {
+        let builder = new ShaderBuilder(this._context);
+
+        this._shaderIncludes.forEach((v, k) => builder = builder.withInclude(k, v));
+        this._globalBindGroupLayouts.forEach((layout, i) => builder.withBindGroup(i, layout))
+
+        return builder;
+    }
+
+    /**
+     * Create a BindGroupLayoutBuilder for creating a BindGroupLayout.
+     */
+    createBindGroupLayout(): BindGroupLayoutBuilder
+    {
+        return new BindGroupLayoutBuilder(this._context);
+    }
+
+    /**
+     * Create a BindGroupBuilder for creating a BindGroup.
+     */
+    createBindGroup(layout: BindGroupLayout): BindGroupBuilder
+    {
+        return new BindGroupBuilder(this._context, layout);
+    }
+
+    /**
+     * Create a MeshBuilder for creating a Mesh.
+     */
+    createMesh(): MeshBuilder
+    {
+        return new MeshBuilder(this._context);
+    }
+
+    /**
+     * Create a RenderPipelineBuilder for creating a RenderPipeline.
+     */
+    createRenderPipeline(): RenderPipelineBuilder
+    {
+        return new RenderPipelineBuilder(this._context, this._options.depthStencilFormat);
+    }
+
+    /**
+     * Create a ComputePipelineBuilder for creating a ComputePipeline.
+     */
+    createComputePipeline(): ComputePipelineBuilder
+    {
+        return new ComputePipelineBuilder(this._context);
+    }
+
+    /**
+     * Create a SamplerBuilder for creating a Sampler.
+     */
+    createSampler(): SamplerBuilder
+    {
+        return new SamplerBuilder(this._context);
+    }
+
+    /**
+     * Create a TextureBuilder for creating a Texture.
+     */
+    createTexture(): TextureBuilder
+    {
+        return new TextureBuilder(this._context, this._mipShader)
+    }
+
+    /**
+     * Creates a command encoder for recording GPU commands for the current frame.
+     * @param label - Optional debug label to assign to the encoder
+     */
+    createCommandEncoder(label?: string): CommandEncoder {
+        return new CommandEncoder(this.backbufferTarget, this._globalBindGroups, this._context, this._depthStencilTarget, label);
+    }
+
+    /**
+     * Create a UniformBufferLayoutBuilder for creating a UniformBufferLayout.
+     */
+    createUniformBufferLayout(): UniformBufferLayoutBuilder
+    {
+        return new UniformBufferLayoutBuilder();
+    }
+
+    /**
+     * Create a UniformBuffer for the given layout.
+     */
+    createUniformBuffer(layout: UniformBufferLayout): UniformBuffer
+    {
+        return new UniformBuffer(layout, this._context)
+    }
+
+    /**
+     * Create a BufferBuilder to construct raw buffers.
+     */
+    createBuffer(): BufferBuilder
+    {
+        return new BufferBuilder(this._context);
+    }
+
+    /**
+     * Allows setting a global bind group for all render passes. This is useful
+     * for setting bind groups that are used by all passes. These buffers will
+     * automatically be set for all render and compute passes.
+     * @param index - The index of the bind group in the render pipeline layout.
+     * @param buffer - The bind group to set.
+     */
+    setGlobalBindGroup(index: number, layout: BindGroupLayout, buffer: BindGroup): this {
+        this._globalBindGroupLayouts[index] = layout;
+        this._globalBindGroups[index] = buffer;
+        return this;
+    }
+
+    /**
+     * Destroy the TinyHelix instance and release all GPU resources.
+     */
+    destroy(): void {
+        this._context.destroy();
+    }
+
+    /**
+     * Returns the current depth/stencil texture if configured.
+     */
+    depthStencilTexture(): Texture | undefined {
+        return this._depthStencil;
+    }
+
+    /**
+     * Returns the current depth/stencil RenderTarget if configured.
+     */
+    depthStencilTarget(): RenderTarget | undefined {
+        return this._depthStencilTarget;
+    }
+
+    private _createDepthStencil() {
+        this._depthStencil = mapUndefined(this._options.depthStencilFormat, (f) =>
+            this.createTexture()
+                .withFormat(f)
+                .withSize(this._canvas.width, this._canvas.height)
+                .withUsage(GPUTextureUsage.RENDER_ATTACHMENT)
+                .build()
+        );
+
+        this._depthStencilTarget = mapUndefined(this._depthStencil, (t) =>
+            this.createRenderTarget(t)
+                .build()
+        );
+    }
 }
