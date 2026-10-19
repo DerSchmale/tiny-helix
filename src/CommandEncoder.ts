@@ -76,4 +76,9 @@ export class CommandEncoder {
         this.finish();
         this._queue.submit([this._commandBuffer!]);
     }
+
+    get _inner(): GPUCommandEncoder
+    {
+        return this._encoder;
+    }
 }

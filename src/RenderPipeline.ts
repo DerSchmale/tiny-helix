@@ -41,7 +41,7 @@ export class RenderPipelineBuilder {
     private _vertexEntry: string | undefined = undefined;
     private _fragmentEntry: string | undefined = undefined;
     private _label: string | undefined = undefined;
-    private _overrideConstants: Record<ShaderStage, Record<string, number>> = {};
+    private _overrideConstants: Record<number, Record<string, number>> = {};
     private _cullMode: CullMode = CullMode.Back;
     private _mesh: Mesh | undefined = undefined;
 

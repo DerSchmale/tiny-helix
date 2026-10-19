@@ -196,7 +196,6 @@ export class UniformBufferLayout {
 export class UniformBuffer implements IBuffer {
     private _buffer: Buffer;
     private _data: ArrayBuffer;
-    private _ctx: WebGPUContext;
     private _dataViews: Map<string, [Member, IndexedCollection]> = new Map();
 
     /**
@@ -215,7 +214,6 @@ export class UniformBuffer implements IBuffer {
         // hmmm let's think a bit here.
         // We could go through all the members of the layout and create typed views for them, so we don't need all the
         // _write functions upstairs
-        this._ctx = ctx;
     }
 
     /**
@@ -303,7 +301,7 @@ export class UniformBuffer implements IBuffer {
      * Upload the current buffer contents to the GPU.
      */
     upload(): this {
-        this._buffer._uploadData(this._ctx);
+        this._buffer.uploadData();
         return this;
     }
 

@@ -366,6 +366,9 @@ class CommandEncoder {
         this.finish();
         this._queue.submit([this._commandBuffer]);
     }
+    get _inner() {
+        return this._encoder;
+    }
 }
 
 
@@ -2499,6 +2502,9 @@ class WebGPUContext {
         if (!this._device) {
             throw new Error('Failed to get WebGPU device');
         }
+        this._device.addEventListener('uncapturederror', (event) => {
+            console.error('WebGPU uncaptured error:', event.error.message);
+        });
         // Setup error handling
         this._device.lost.then((info) => {
             console.error("WebGPU device lost:", info.message, "\nReason:", info.reason);
@@ -2594,24 +2600,25 @@ __webpack_require__.r(__webpack_exports__);
  */
 var BufferUsage;
 (function (BufferUsage) {
-    BufferUsage[BufferUsage["MapRead"] = GPUBufferUsage.MAP_READ] = "MapRead";
-    BufferUsage[BufferUsage["MapWrite"] = GPUBufferUsage.MAP_WRITE] = "MapWrite";
-    BufferUsage[BufferUsage["CopySrc"] = GPUBufferUsage.COPY_SRC] = "CopySrc";
-    BufferUsage[BufferUsage["CopyDst"] = GPUBufferUsage.COPY_DST] = "CopyDst";
-    BufferUsage[BufferUsage["Index"] = GPUBufferUsage.INDEX] = "Index";
-    BufferUsage[BufferUsage["Vertex"] = GPUBufferUsage.VERTEX] = "Vertex";
-    BufferUsage[BufferUsage["Uniform"] = GPUBufferUsage.UNIFORM] = "Uniform";
-    BufferUsage[BufferUsage["Storage"] = GPUBufferUsage.STORAGE] = "Storage";
-    BufferUsage[BufferUsage["Indirect"] = GPUBufferUsage.INDIRECT] = "Indirect";
-    BufferUsage[BufferUsage["QueryResolve"] = GPUBufferUsage.QUERY_RESOLVE] = "QueryResolve";
+    BufferUsage[BufferUsage["MapRead"] = 1] = "MapRead";
+    BufferUsage[BufferUsage["MapWrite"] = 2] = "MapWrite";
+    BufferUsage[BufferUsage["CopySrc"] = 4] = "CopySrc";
+    BufferUsage[BufferUsage["CopyDst"] = 8] = "CopyDst";
+    BufferUsage[BufferUsage["Index"] = 16] = "Index";
+    BufferUsage[BufferUsage["Vertex"] = 32] = "Vertex";
+    BufferUsage[BufferUsage["Uniform"] = 64] = "Uniform";
+    BufferUsage[BufferUsage["Storage"] = 128] = "Storage";
+    BufferUsage[BufferUsage["Indirect"] = 256] = "Indirect";
+    BufferUsage[BufferUsage["QueryResolve"] = 512] = "QueryResolve";
 })(BufferUsage || (BufferUsage = {}));
 var TextureUsage;
 (function (TextureUsage) {
-    TextureUsage[TextureUsage["CopySrc"] = GPUTextureUsage.COPY_SRC] = "CopySrc";
-    TextureUsage[TextureUsage["CopyDst"] = GPUTextureUsage.COPY_DST] = "CopyDst";
-    TextureUsage[TextureUsage["TextureBinding"] = GPUTextureUsage.TEXTURE_BINDING] = "TextureBinding";
-    TextureUsage[TextureUsage["StorageBinding"] = GPUTextureUsage.STORAGE_BINDING] = "StorageBinding";
-    TextureUsage[TextureUsage["RenderAttachment"] = GPUTextureUsage.RENDER_ATTACHMENT] = "RenderAttachment";
+    TextureUsage[TextureUsage["CopySrc"] = 1] = "CopySrc";
+    TextureUsage[TextureUsage["CopyDst"] = 2] = "CopyDst";
+    TextureUsage[TextureUsage["TextureBinding"] = 4] = "TextureBinding";
+    TextureUsage[TextureUsage["StorageBinding"] = 8] = "StorageBinding";
+    TextureUsage[TextureUsage["RenderAttachment"] = 16] = "RenderAttachment";
+    TextureUsage[TextureUsage["TransientAttachment"] = 32] = "TransientAttachment";
 })(TextureUsage || (TextureUsage = {}));
 /**
  * Builder for creating GPU-backed buffers.
@@ -2674,7 +2681,7 @@ class BufferBuilder {
         if (data) {
             this._ctx.device.queue.writeBuffer(buffer, 0, data);
         }
-        return new Buffer(buffer, this._keepData ? this._data : undefined);
+        return new Buffer(buffer, this._ctx, this._keepData ? this._data : undefined);
     }
 }
 /**
@@ -2685,20 +2692,22 @@ class Buffer {
     /**
      * Create a Buffer from an existing GPUBuffer.
      * @param inner The underlying GPUBuffer.
+     * @param ctx The WebGPUContext
      * @param data Optional CPU-side copy of the buffer contents.
      */
-    constructor(inner, data) {
+    constructor(inner, ctx, data) {
         this._inner = inner;
         this.data = data;
+        this._ctx = ctx;
     }
     /** Size of the GPU buffer in bytes. */
     get size() { return this._inner.size; }
-    _uploadData(ctx) {
+    uploadData() {
         if (!this.data) {
             console.warn("Buffer has no data to upload.");
             return;
         }
-        ctx.device.queue.writeBuffer(this._inner, 0, this.data);
+        this._ctx.device.queue.writeBuffer(this._inner, 0, this.data);
     }
     _getBufferResource() {
         return { buffer: this._inner };
@@ -3116,7 +3125,6 @@ class UniformBuffer {
         // hmmm let's think a bit here.
         // We could go through all the members of the layout and create typed views for them, so we don't need all the
         // _write functions upstairs
-        this._ctx = ctx;
     }
     /**
      * Sets the value of a scalar field.
@@ -3197,7 +3205,7 @@ class UniformBuffer {
      * Upload the current buffer contents to the GPU.
      */
     upload() {
-        this._buffer._uploadData(this._ctx);
+        this._buffer.uploadData();
         return this;
     }
     /**
@@ -3418,9 +3426,10 @@ var SamplerType;
 })(SamplerType || (SamplerType = {}));
 var ColorChannel;
 (function (ColorChannel) {
-    ColorChannel[ColorChannel["Red"] = GPUColorWrite.RED] = "Red";
-    ColorChannel[ColorChannel["Green"] = GPUColorWrite.GREEN] = "Green";
-    ColorChannel[ColorChannel["Blue"] = GPUColorWrite.BLUE] = "Blue";
+    ColorChannel[ColorChannel["Red"] = 1] = "Red";
+    ColorChannel[ColorChannel["Green"] = 2] = "Green";
+    ColorChannel[ColorChannel["Blue"] = 4] = "Blue";
+    ColorChannel[ColorChannel["Alpha"] = 8] = "Alpha";
 })(ColorChannel || (ColorChannel = {}));
 var TextureDimension;
 (function (TextureDimension) {
@@ -3439,9 +3448,9 @@ var TextureViewDimension;
 })(TextureViewDimension || (TextureViewDimension = {}));
 var ShaderStage;
 (function (ShaderStage) {
-    ShaderStage[ShaderStage["Vertex"] = GPUShaderStage.VERTEX] = "Vertex";
-    ShaderStage[ShaderStage["Fragment"] = GPUShaderStage.FRAGMENT] = "Fragment";
-    ShaderStage[ShaderStage["Compute"] = GPUShaderStage.COMPUTE] = "Compute";
+    ShaderStage[ShaderStage["Vertex"] = 1] = "Vertex";
+    ShaderStage[ShaderStage["Fragment"] = 2] = "Fragment";
+    ShaderStage[ShaderStage["Compute"] = 4] = "Compute";
 })(ShaderStage || (ShaderStage = {}));
 var StoreOp;
 (function (StoreOp) {

@@ -179,9 +179,10 @@ export enum SamplerType {
 }
 
 export enum ColorChannel {
-    Red = GPUColorWrite.RED,
-    Green = GPUColorWrite.GREEN,
-    Blue = GPUColorWrite.BLUE
+    Red = 1,
+    Green = 2,
+    Blue = 4,
+    Alpha = 8
 }
 
 export enum TextureDimension {
@@ -200,9 +201,9 @@ export enum TextureViewDimension {
 }
 
 export enum ShaderStage {
-    Vertex = GPUShaderStage.VERTEX,
-    Fragment = GPUShaderStage.FRAGMENT,
-    Compute = GPUShaderStage.COMPUTE
+    Vertex = 1,
+    Fragment = 2,
+    Compute = 4
 }
 
 export enum StoreOp {

@@ -73,7 +73,6 @@ export declare class UniformBufferLayout {
 export declare class UniformBuffer implements IBuffer {
     private _buffer;
     private _data;
-    private _ctx;
     private _dataViews;
     /**
      * Create a new UniformBuffer with the given layout and WebGPU context.

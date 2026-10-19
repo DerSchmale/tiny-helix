@@ -8,24 +8,25 @@ import {IBuffer} from "./IBuffer";
  * Use these when constructing buffers with `BufferBuilder.withUsage()`.
  */
 export enum BufferUsage {
-    MapRead = GPUBufferUsage.MAP_READ,
-    MapWrite = GPUBufferUsage.MAP_WRITE,
-    CopySrc = GPUBufferUsage.COPY_SRC,
-    CopyDst = GPUBufferUsage.COPY_DST,
-    Index = GPUBufferUsage.INDEX,
-    Vertex = GPUBufferUsage.VERTEX,
-    Uniform = GPUBufferUsage.UNIFORM,
-    Storage = GPUBufferUsage.STORAGE,
-    Indirect = GPUBufferUsage.INDIRECT,
-    QueryResolve = GPUBufferUsage.QUERY_RESOLVE
+    MapRead = 1,
+    MapWrite = 2,
+    CopySrc = 4,
+    CopyDst = 8,
+    Index = 16,
+    Vertex = 32,
+    Uniform = 64,
+    Storage = 128,
+    Indirect = 256,
+    QueryResolve = 512
 }
 
 export enum TextureUsage {
-    CopySrc = GPUTextureUsage.COPY_SRC,
-    CopyDst = GPUTextureUsage.COPY_DST,
-    TextureBinding = GPUTextureUsage.TEXTURE_BINDING,
-    StorageBinding = GPUTextureUsage.STORAGE_BINDING,
-    RenderAttachment = GPUTextureUsage.RENDER_ATTACHMENT
+    CopySrc = 1,
+    CopyDst = 2,
+    TextureBinding = 4,
+    StorageBinding = 8,
+    RenderAttachment = 16,
+    TransientAttachment = 32
 }
 
 /**
@@ -100,7 +101,7 @@ export class BufferBuilder {
             this._ctx.device.queue.writeBuffer(buffer, 0, data);
         }
 
-        return new Buffer(buffer, this._keepData ? this._data : undefined);
+        return new Buffer(buffer, this._ctx, this._keepData ? this._data : undefined);
     }
 }
 
@@ -111,28 +112,31 @@ export class BufferBuilder {
 export class Buffer implements IBuffer {
     readonly _inner: GPUBuffer;
     readonly data?: ArrayBufferLike;
+    private _ctx: WebGPUContext;
 
     /**
      * Create a Buffer from an existing GPUBuffer.
      * @param inner The underlying GPUBuffer.
+     * @param ctx The WebGPUContext
      * @param data Optional CPU-side copy of the buffer contents.
      */
-    constructor(inner: GPUBuffer, data?: ArrayBufferLike) {
+    constructor(inner: GPUBuffer, ctx: WebGPUContext, data?: ArrayBufferLike) {
         this._inner = inner;
         this.data = data;
+        this._ctx = ctx;
     }
 
     /** Size of the GPU buffer in bytes. */
     get size(): number { return this._inner.size; }
 
-    _uploadData(ctx: WebGPUContext)
+    uploadData()
     {
         if (!this.data) {
             console.warn("Buffer has no data to upload.");
             return;
         }
 
-        ctx.device.queue.writeBuffer(this._inner, 0, this.data);
+        this._ctx.device.queue.writeBuffer(this._inner, 0, this.data);
     }
 
     _getBufferResource(): GPUBindingResource {

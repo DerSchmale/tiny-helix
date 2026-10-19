@@ -6,23 +6,24 @@ import { IBuffer } from "./IBuffer";
  * Use these when constructing buffers with `BufferBuilder.withUsage()`.
  */
 export declare enum BufferUsage {
-    MapRead,
-    MapWrite,
-    CopySrc,
-    CopyDst,
-    Index,
-    Vertex,
-    Uniform,
-    Storage,
-    Indirect,
-    QueryResolve
+    MapRead = 1,
+    MapWrite = 2,
+    CopySrc = 4,
+    CopyDst = 8,
+    Index = 16,
+    Vertex = 32,
+    Uniform = 64,
+    Storage = 128,
+    Indirect = 256,
+    QueryResolve = 512
 }
 export declare enum TextureUsage {
-    CopySrc,
-    CopyDst,
-    TextureBinding,
-    StorageBinding,
-    RenderAttachment
+    CopySrc = 1,
+    CopyDst = 2,
+    TextureBinding = 4,
+    StorageBinding = 8,
+    RenderAttachment = 16,
+    TransientAttachment = 32
 }
 /**
  * Builder for creating GPU-backed buffers.
@@ -67,14 +68,16 @@ export declare class BufferBuilder {
 export declare class Buffer implements IBuffer {
     readonly _inner: GPUBuffer;
     readonly data?: ArrayBufferLike;
+    private _ctx;
     /**
      * Create a Buffer from an existing GPUBuffer.
      * @param inner The underlying GPUBuffer.
+     * @param ctx The WebGPUContext
      * @param data Optional CPU-side copy of the buffer contents.
      */
-    constructor(inner: GPUBuffer, data?: ArrayBufferLike);
+    constructor(inner: GPUBuffer, ctx: WebGPUContext, data?: ArrayBufferLike);
     /** Size of the GPU buffer in bytes. */
     get size(): number;
-    _uploadData(ctx: WebGPUContext): void;
+    uploadData(): void;
     _getBufferResource(): GPUBindingResource;
 }

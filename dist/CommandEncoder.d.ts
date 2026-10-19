@@ -1,3 +1,4 @@
+/// <reference types="@webgpu/types" />
 import { WebGPUContext } from "./WebGPUContext";
 import { RenderPassBuilder } from "./RenderPass";
 import { RenderTarget } from "./RenderTarget";
@@ -47,4 +48,5 @@ export declare class CommandEncoder {
      * been finished yet, finish() will be called automatically.
      */
     submit(): void;
+    get _inner(): GPUCommandEncoder;
 }

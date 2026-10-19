@@ -169,9 +169,10 @@ export declare enum SamplerType {
     Comparison = "comparison"
 }
 export declare enum ColorChannel {
-    Red,
-    Green,
-    Blue
+    Red = 1,
+    Green = 2,
+    Blue = 4,
+    Alpha = 8
 }
 export declare enum TextureDimension {
     D1 = "1d",
@@ -187,9 +188,9 @@ export declare enum TextureViewDimension {
     D3 = "3d"
 }
 export declare enum ShaderStage {
-    Vertex,
-    Fragment,
-    Compute
+    Vertex = 1,
+    Fragment = 2,
+    Compute = 4
 }
 export declare enum StoreOp {
     Store = "store",

@@ -129,6 +129,10 @@ export class WebGPUContext {
             throw new Error('Failed to get WebGPU device');
         }
 
+        this._device.addEventListener('uncapturederror', (event) => {
+            console.error('WebGPU uncaptured error:', event.error.message);
+        });
+
         // Setup error handling
         this._device.lost.then((info: GPUDeviceLostInfo) => {
             console.error("WebGPU device lost:", info.message, "\nReason:", info.reason);
