@@ -258,7 +258,7 @@ export class RenderPassBuilder {
                 view: target._inner,
                 depthClearValue: this._clearDepth,
                 depthLoadOp: this._clearDepth != undefined ? 'clear' : 'load',
-                depthStoreOp: mapUndefined(this._clearDepth, () => 'store'),
+                depthStoreOp: 'store',
                 stencilClearValue,
                 stencilLoadOp,
                 stencilStoreOp

@@ -1045,7 +1045,7 @@ class RenderPassBuilder {
                 view: target._inner,
                 depthClearValue: this._clearDepth,
                 depthLoadOp: this._clearDepth != undefined ? 'clear' : 'load',
-                depthStoreOp: (0,_utils_mapUndefined__WEBPACK_IMPORTED_MODULE_0__.mapUndefined)(this._clearDepth, () => 'store'),
+                depthStoreOp: 'store',
                 stencilClearValue,
                 stencilLoadOp,
                 stencilStoreOp
