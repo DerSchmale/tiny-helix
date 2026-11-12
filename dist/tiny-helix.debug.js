@@ -522,7 +522,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   MeshBuilder: () => (/* binding */ MeshBuilder),
 /* harmony export */   MeshTopology: () => (/* binding */ MeshTopology),
 /* harmony export */   StreamBuilder: () => (/* binding */ StreamBuilder),
-/* harmony export */   VertexFormat: () => (/* binding */ VertexFormat)
+/* harmony export */   VertexFormat: () => (/* binding */ VertexFormat),
+/* harmony export */   VertexStream: () => (/* binding */ VertexStream)
 /* harmony export */ });
 /* harmony import */ var _buffers_Buffer__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./buffers/Buffer */ "./src/buffers/Buffer.ts");
 /* harmony import */ var _utils_mapUndefined__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./utils/mapUndefined */ "./src/utils/mapUndefined.ts");
@@ -659,6 +660,20 @@ class Mesh {
     /** Get the declared attributes for a vertex stream. */
     getStreamAttributes(streamIndex) {
         return this._streams[streamIndex].attributes;
+    }
+    /**
+     * Returns [ streamIndex, attribute ] for the attribute with the given name.
+     */
+    getAttributeInfo(attribName) {
+        const numStreams = this._streams.length;
+        for (let i = 0; i < numStreams; ++i) {
+            const stream = this._streams[i];
+            for (const attrib of stream.attributes) {
+                if (attrib.name === attribName)
+                    return [i, attrib];
+            }
+        }
+        return undefined;
     }
     /** Get the optional index buffer backing this mesh. */
     get indexBuffer() {
@@ -886,6 +901,20 @@ class RenderPass {
      */
     setBindGroup(index, bindGroup) {
         this._inner.setBindGroup(index, bindGroup._inner);
+        return this;
+    }
+    setBlendConstant(r, g, b, a) {
+        let color;
+        if (r === undefined) {
+            color = [0.0, 0.0, 0.0, 1.0];
+        }
+        else if (typeof r === 'number') {
+            color = [r, g ?? 0.0, b ?? 0.0, a ?? 1.0];
+        }
+        else {
+            color = [r[0], r[1], r[2], r[3] ?? 1.0];
+        }
+        this._inner.setBlendConstant(color);
         return this;
     }
     /**
@@ -3815,6 +3844,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   UniformBufferLayout: () => (/* reexport safe */ _buffers_UniformBuffer__WEBPACK_IMPORTED_MODULE_16__.UniformBufferLayout),
 /* harmony export */   UniformBufferLayoutBuilder: () => (/* reexport safe */ _buffers_UniformBuffer__WEBPACK_IMPORTED_MODULE_16__.UniformBufferLayoutBuilder),
 /* harmony export */   VertexFormat: () => (/* reexport safe */ _Mesh__WEBPACK_IMPORTED_MODULE_8__.VertexFormat),
+/* harmony export */   VertexStream: () => (/* reexport safe */ _Mesh__WEBPACK_IMPORTED_MODULE_8__.VertexStream),
 /* harmony export */   WebGPUContext: () => (/* reexport safe */ _WebGPUContext__WEBPACK_IMPORTED_MODULE_1__.WebGPUContext),
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });

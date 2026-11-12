@@ -156,6 +156,24 @@ export class Mesh {
         return this._streams[streamIndex].attributes;
     }
 
+    /**
+     * Returns [ streamIndex, attribute ] for the attribute with the given name.
+     */
+    getAttributeInfo(attribName: string): [ number, VertexAttribute ] | undefined
+    {
+        const numStreams = this._streams.length;
+        for (let i = 0; i < numStreams; ++i) {
+            const stream = this._streams[i];
+            for (const attrib of stream.attributes) {
+                if (attrib.name === attribName)
+                    return [ i, attrib ];
+            }
+
+        }
+
+        return undefined;
+    }
+
     /** Get the optional index buffer backing this mesh. */
     get indexBuffer(): Buffer | undefined {
         return this._indexBuffer?.buffer;
@@ -231,7 +249,7 @@ export type VertexAttribute = {
     offset: number;
 }
 
-class VertexStream {
+export class VertexStream {
     stride: number = 0;
     attributes: VertexAttribute[] = [];
     buffer?: Buffer;

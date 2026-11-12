@@ -36,6 +36,10 @@ export declare class RenderPass {
      * @param bindGroup - a `BindGroup` instance
      */
     setBindGroup(index: number, bindGroup: BindGroup): this;
+    setBlendConstant(): this;
+    setBlendConstant(r: number[] | IndexedCollection): this;
+    setBlendConstant(r: number, g: number, b: number): this;
+    setBlendConstant(r: number, g: number, b: number, a: number): this;
     /**
      * Issue a draw call using the currently set pipeline and mesh.
      */

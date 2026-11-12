@@ -105,6 +105,10 @@ export declare class Mesh {
     getStreamStride(streamIndex: number): number;
     /** Get the declared attributes for a vertex stream. */
     getStreamAttributes(streamIndex: number): VertexAttribute[];
+    /**
+     * Returns [ streamIndex, attribute ] for the attribute with the given name.
+     */
+    getAttributeInfo(attribName: string): [number, VertexAttribute] | undefined;
     /** Get the optional index buffer backing this mesh. */
     get indexBuffer(): Buffer | undefined;
     /** Get the index format of the index buffer backing this mesh. */
@@ -117,7 +121,7 @@ export type VertexAttribute = {
     format: VertexFormat;
     offset: number;
 };
-declare class VertexStream {
+export declare class VertexStream {
     stride: number;
     attributes: VertexAttribute[];
     buffer?: Buffer;

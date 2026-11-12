@@ -71,6 +71,26 @@ export class RenderPass {
         return this;
     }
 
+    setBlendConstant(): this;
+    setBlendConstant(r: number[] | IndexedCollection): this;
+    setBlendConstant(r: number, g: number, b: number): this;
+    setBlendConstant(r: number, g: number, b: number, a: number): this;
+    setBlendConstant(r?: number | number[] | IndexedCollection, g?: number, b?: number, a?: number): this
+    {
+        let color;
+        if (r === undefined) {
+            color = [0.0, 0.0, 0.0, 1.0];
+        } else if (typeof r === 'number') {
+            color = [r, g ?? 0.0, b ?? 0.0, a ?? 1.0];
+        } else {
+            color = [r[0], r[1], r[2], r[3] ?? 1.0];
+        }
+
+        this._inner.setBlendConstant(color);
+
+        return this;
+    }
+
     /**
      * Issue a draw call using the currently set pipeline and mesh.
      */
